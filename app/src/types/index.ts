@@ -138,6 +138,13 @@ export interface MonthlyRentCostBreakdown {
   netTotal: Won;
 }
 
+export interface AssetProjectionPoint {
+  year: number;
+  buyNetAsset: Won;         // 부동산 순자산 = 시세(년도별) - 잔여대출
+  jeonseNetAsset: Won;      // 전세 순자산 = 초기여유금 투자 + 월절약액 적립 + 보증금 - 전세대출
+  monthlyRentNetAsset: Won; // 월세 순자산 = 초기여유금 투자 + 월절약액 적립 + 보증금
+}
+
 export interface YearlyCostDataPoint {
   year: number;
   buyCumulative: Won;
@@ -158,6 +165,7 @@ export interface CalculationResults {
   monthlyRent: MonthlyRentCostBreakdown;
   yearlyCostSeries: YearlyCostDataPoint[];
   breakevenSeries: BreakevenDataPoint[];
+  assetProjectionSeries: AssetProjectionPoint[];
   recommendation: ScenarioKey;
 }
 

@@ -77,32 +77,31 @@ export function PriceStepCard() {
         description="전세 시나리오"
       />
 
-      <div className="flex gap-3">
-        <div className="flex-1">
-          <NumberPadInput
-            label="보증금"
-            value={monthlyRentInputs.depositAmount}
-            onChange={(v) => updateMonthlyRentInputs({ depositAmount: v })}
-            unit="만원"
-            presets={DEPOSIT_PRESETS}
-            min={0}
-            max={500_000_000}
-            step={1_000_000}
-            description="월세 시나리오"
-          />
-        </div>
-        <div className="flex-1">
-          <NumberPadInput
-            label="월세"
-            value={monthlyRentInputs.monthlyRent}
-            onChange={(v) => updateMonthlyRentInputs({ monthlyRent: v })}
-            unit="만원/월"
-            presets={MONTHLY_RENT_PRESETS}
-            min={100_000}
-            max={5_000_000}
-            step={50_000}
-          />
-        </div>
+      <div className="grid grid-cols-2 gap-3 items-stretch">
+        <NumberPadInput
+          label="보증금"
+          value={monthlyRentInputs.depositAmount}
+          onChange={(v) => updateMonthlyRentInputs({ depositAmount: v })}
+          unit="만원"
+          presets={DEPOSIT_PRESETS}
+          min={0}
+          max={500_000_000}
+          step={1_000_000}
+          description="월세 시나리오"
+          className="h-full"
+        />
+        <NumberPadInput
+          label="월세"
+          value={monthlyRentInputs.monthlyRent}
+          onChange={(v) => updateMonthlyRentInputs({ monthlyRent: v })}
+          unit="만원/월"
+          presets={MONTHLY_RENT_PRESETS}
+          min={100_000}
+          max={5_000_000}
+          step={50_000}
+          description="월세 시나리오"
+          className="h-full"
+        />
       </div>
     </div>
   );

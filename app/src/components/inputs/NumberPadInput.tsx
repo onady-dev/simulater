@@ -16,6 +16,7 @@ interface Props {
   max: number;
   step: number;
   description?: string;
+  className?: string;
 }
 
 export function NumberPadInput({
@@ -28,6 +29,7 @@ export function NumberPadInput({
   max,
   step,
   description,
+  className,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -46,7 +48,7 @@ export function NumberPadInput({
     <>
       <button
         onClick={openSheet}
-        className="w-full bg-white rounded-2xl p-5 text-left shadow-sm border border-gray-100 active:scale-[0.98] transition-transform"
+        className={`w-full bg-white rounded-2xl p-5 text-left shadow-sm border border-gray-100 active:scale-[0.98] transition-transform${className ? ` ${className}` : ''}`}
       >
         {description && (
           <p className="text-xs text-gray-400 mb-1">{description}</p>

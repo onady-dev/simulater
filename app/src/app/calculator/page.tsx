@@ -11,6 +11,7 @@ import { ScenarioSwipeCards } from '@/components/results/ScenarioSwipeCards';
 import { YearlyCostChart } from '@/components/charts/YearlyCostChart';
 import { BreakevenChart } from '@/components/charts/BreakevenChart';
 import { ScenarioBarChart } from '@/components/charts/ScenarioBarChart';
+import { AssetProjectionChart } from '@/components/charts/AssetProjectionChart';
 
 export default function CalculatorPage() {
   const calculate = useCalculatorStore((s) => s.calculate);
@@ -37,10 +38,13 @@ export default function CalculatorPage() {
         {/* 결과 배너 */}
         <WinnerBanner />
 
-        {/* 시나리오 카드 */}
+        {/* [메인] 순자산 변화 차트 */}
+        <AssetProjectionChart />
+
+        {/* [보조] 시나리오 비용 카드 */}
         <ScenarioSwipeCards />
 
-        {/* 차트 */}
+        {/* [보조] 비용 상세 차트 */}
         {results && (
           <section className="px-4 space-y-4">
             <ScenarioBarChart

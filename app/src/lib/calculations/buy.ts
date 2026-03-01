@@ -27,7 +27,7 @@ function calcRegistrationCosts(price: number): { registrationTax: number; stampD
   return { registrationTax, stampDuty };
 }
 
-function estimateAnnualMaintenanceFee(areaM2: number): number {
+export function estimateAnnualMaintenanceFee(areaM2: number): number {
   return Math.floor(areaM2 * 2_920 * 12);
 }
 

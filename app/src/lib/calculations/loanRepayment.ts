@@ -4,6 +4,7 @@ export interface LoanRepaymentResult {
   totalInterestPaid: number;
   yearlyInterestSchedule: number[];
   remainingPrincipal: number;
+  monthlyPayment: number; // 월 실납부액(원리금 합계) — 순자산 비교 기준
 }
 
 /**
@@ -43,6 +44,7 @@ export function calculateEqualPayment(
     totalInterestPaid: Math.round(totalInterestPaid),
     yearlyInterestSchedule,
     remainingPrincipal: Math.round(balance),
+    monthlyPayment: Math.round(monthlyPayment),
   };
 }
 
@@ -58,6 +60,8 @@ export function calculateEqualPrincipal(
 ): LoanRepaymentResult {
   const r = annualRate / 12;
   const monthlyPrincipal = principal / (totalYears * 12);
+  // 첫 달 납부액(원금+이자) — 원금균등은 초기가 가장 큰 대표값
+  const firstMonthPayment = monthlyPrincipal + principal * r;
 
   let balance = principal;
   const yearlyInterestSchedule: number[] = [];
@@ -78,6 +82,7 @@ export function calculateEqualPrincipal(
     totalInterestPaid: Math.round(totalInterestPaid),
     yearlyInterestSchedule,
     remainingPrincipal: Math.round(balance),
+    monthlyPayment: Math.round(firstMonthPayment),
   };
 }
 
@@ -94,6 +99,7 @@ export function calculateBullet(
     totalInterestPaid: yearlyInterest * holdingYears,
     yearlyInterestSchedule: Array<number>(holdingYears).fill(yearlyInterest),
     remainingPrincipal: principal,
+    monthlyPayment: Math.round(principal * annualRate / 12),
   };
 }
 

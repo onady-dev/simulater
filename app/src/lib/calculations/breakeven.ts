@@ -4,10 +4,13 @@ import type {
   MonthlyRentInputs,
   YearlyCostDataPoint,
   BreakevenDataPoint,
+  AssetProjectionPoint,
 } from '@/types';
-import { calculateBuyScenario } from './buy';
+import { calculateBuyScenario, estimateAnnualMaintenanceFee } from './buy';
 import { calculateJeonseScenario } from './jeonse';
 import { calculateMonthlyRentScenario } from './monthlyRent';
+import { calculateLoanRepayment } from './loanRepayment';
+import { calculatePropertyTax } from './taxes';
 
 /**
  * 연도별 누적 비용 시계열 생성
@@ -65,4 +68,78 @@ export function convertJeonseToMonthlyRent(
   conversionRate: number = 0.05,
 ): number {
   return Math.floor(((jeonseDeposit - newDeposit) * conversionRate) / 12);
+}
+
+/**
+ * 순자산 변화 시뮬레이션 시계열 생성
+ *
+ * 공통 기준: 매수 자기자본(purchasePrice - loanAmount)을 초기 보유 현금으로 설정.
+ * 전세·월세는 (초기여유금 + 매달 매수 대비 절약액)을 expectedInvestmentReturn으로 운용.
+ */
+export function generateAssetProjectionSeries(
+  buyInputs: BuyInputs,
+  jeonseInputs: JeonseInputs,
+  monthlyRentInputs: MonthlyRentInputs,
+): AssetProjectionPoint[] {
+  const { purchasePrice, loanAmount, loanRate, loanType, annualPriceChangeRate, yearsToHold } =
+    buyInputs;
+  const r = jeonseInputs.expectedInvestmentReturn;
+
+  // 매수 월 현금지출: 원리금 + 재산세/관리비 월할
+  const buySchedule = calculateLoanRepayment(loanAmount, loanRate, loanType, 30, yearsToHold);
+  const buyMonthlyMortgage = buySchedule.monthlyPayment;
+  const propertyTax = calculatePropertyTax(purchasePrice);
+  const maintenanceFee = estimateAnnualMaintenanceFee(buyInputs.areaM2);
+  const buyMonthlyOutflow = buyMonthlyMortgage + (propertyTax + maintenanceFee) / 12;
+
+  // 전세 월 현금지출 (이자만 — 만기일시상환 가정)
+  const jeonseMonthlyOutflow = (jeonseInputs.loanAmount * jeonseInputs.loanRate) / 12;
+
+  // 월세 월 현금지출
+  const rentMonthlyOutflow = monthlyRentInputs.monthlyRent;
+
+  // 초기 여유금: 매수 자기자본에서 각 시나리오 보증금 자부담 차감
+  const buyEquity = purchasePrice - loanAmount;
+  const jeonseOwnDeposit = Math.max(0, jeonseInputs.depositAmount - jeonseInputs.loanAmount);
+  const jeonseInitialInvestable = Math.max(0, buyEquity - jeonseOwnDeposit);
+  const rentInitialInvestable = Math.max(0, buyEquity - monthlyRentInputs.depositAmount);
+
+  // 월 절약액 (음수 = 해당 시나리오가 더 비쌈)
+  const jeonseMonthlySaving = buyMonthlyOutflow - jeonseMonthlyOutflow;
+  const rentMonthlySaving = buyMonthlyOutflow - rentMonthlyOutflow;
+
+  return Array.from({ length: yearsToHold }, (_, i) => {
+    const year = i + 1;
+    const months = year * 12;
+
+    // 매수 순자산: 시세 - 잔여대출
+    const salePrice = Math.floor(purchasePrice * Math.pow(1 + annualPriceChangeRate, year));
+    const remainingLoan = calculateLoanRepayment(
+      loanAmount,
+      loanRate,
+      loanType,
+      30,
+      year,
+    ).remainingPrincipal;
+    const buyNetAsset = salePrice - remainingLoan;
+
+    // 연금 미래가치 계수
+    const fvFactor = r > 0 ? (Math.pow(1 + r / 12, months) - 1) / (r / 12) : months;
+
+    // 전세 순자산
+    const fvInitialJeonse = jeonseInitialInvestable * Math.pow(1 + r, year);
+    const fvSavingJeonse = jeonseMonthlySaving * fvFactor;
+    const jeonseNetAsset = Math.round(
+      fvInitialJeonse + fvSavingJeonse + jeonseInputs.depositAmount - jeonseInputs.loanAmount,
+    );
+
+    // 월세 순자산
+    const fvInitialRent = rentInitialInvestable * Math.pow(1 + r, year);
+    const fvSavingRent = rentMonthlySaving * fvFactor;
+    const monthlyRentNetAsset = Math.round(
+      fvInitialRent + fvSavingRent + monthlyRentInputs.depositAmount,
+    );
+
+    return { year, buyNetAsset, jeonseNetAsset, monthlyRentNetAsset };
+  });
 }

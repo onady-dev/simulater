@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import { motion, useMotionValue, animate } from 'framer-motion';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatWon } from '@/lib/utils/format';
@@ -21,25 +21,35 @@ const SWIPE_VELOCITY_THRESHOLD = 400;
 export function ScenarioSwipeCards() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [detailScenario, setDetailScenario] = useState<ScenarioKey | null>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const cardWidthRef = useRef(0);
   const x = useMotionValue(0);
 
   const results = useCalculatorStore((s) => s.results);
   const yearsToHold = useCalculatorStore((s) => s.buyInputs.yearsToHold);
 
-  useEffect(() => {
-    const measure = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-      }
-    };
-    measure();
-    window.addEventListener('resize', measure);
-    return () => window.removeEventListener('resize', measure);
-  }, []);
+  // useLayoutEffect: paint 전 동기 측정 → 첫 프레임 cardWidth=0 노출 방지
+  useLayoutEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
 
-  function goTo(index: number, width = containerWidth) {
+    const measure = () => {
+      const w = el.offsetWidth;
+      if (w === cardWidthRef.current) return;
+      cardWidthRef.current = w;
+      // 현재 인덱스 위치로 즉시 보정 (animate() 아닌 x.set())
+      x.set(-activeIndex * w);
+    };
+
+    measure();
+
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [activeIndex, x]);
+
+  function goTo(index: number) {
+    const width = containerRef.current?.offsetWidth ?? cardWidthRef.current;
     animate(x, -index * width, { type: 'spring', damping: 30, stiffness: 300 });
     setActiveIndex(index);
   }
@@ -50,14 +60,23 @@ export function ScenarioSwipeCards() {
   ) {
     const dx = info.offset.x;
     const vx = info.velocity.x;
-    const width = containerRef.current?.offsetWidth ?? containerWidth;
+    const width = containerRef.current?.offsetWidth ?? cardWidthRef.current;
 
-    if ((dx < -SWIPE_THRESHOLD || vx < -SWIPE_VELOCITY_THRESHOLD) && activeIndex < SCENARIOS.length - 1) {
-      goTo(activeIndex + 1, width);
-    } else if ((dx > SWIPE_THRESHOLD || vx > SWIPE_VELOCITY_THRESHOLD) && activeIndex > 0) {
-      goTo(activeIndex - 1, width);
+    if (
+      (dx < -SWIPE_THRESHOLD || vx < -SWIPE_VELOCITY_THRESHOLD) &&
+      activeIndex < SCENARIOS.length - 1
+    ) {
+      const next = activeIndex + 1;
+      animate(x, -next * width, { type: 'spring', damping: 30, stiffness: 300 });
+      setActiveIndex(next);
+    } else if (
+      (dx > SWIPE_THRESHOLD || vx > SWIPE_VELOCITY_THRESHOLD) &&
+      activeIndex > 0
+    ) {
+      const prev = activeIndex - 1;
+      animate(x, -prev * width, { type: 'spring', damping: 30, stiffness: 300 });
+      setActiveIndex(prev);
     } else {
-      // 현재 카드로 snap back
       animate(x, -activeIndex * width, { type: 'spring', damping: 30, stiffness: 300 });
     }
   }
@@ -85,17 +104,17 @@ export function ScenarioSwipeCards() {
   return (
     <>
       <div className="space-y-3">
-        {/* overflow-hidden으로 옆 카드가 보이지 않게 */}
         <div className="overflow-hidden" ref={containerRef}>
           <motion.div
             className="flex cursor-grab active:cursor-grabbing"
             style={{ x }}
             drag="x"
             dragConstraints={{
-              left: containerWidth > 0 ? -(SCENARIOS.length - 1) * containerWidth : 0,
+              left: cardWidthRef.current > 0 ? -(SCENARIOS.length - 1) * cardWidthRef.current : 0,
               right: 0,
             }}
             dragElastic={0.08}
+            dragMomentum={false}
             onDragEnd={handleDragEnd}
           >
             {SCENARIOS.map((scenario) => {
@@ -108,20 +127,24 @@ export function ScenarioSwipeCards() {
                 <div
                   key={scenario}
                   className="flex-shrink-0 px-4"
-                  style={{ width: containerWidth > 0 ? containerWidth : '100%' }}
+                  style={{ width: cardWidthRef.current > 0 ? cardWidthRef.current : '100%' }}
                 >
                   <div
                     className="bg-white rounded-3xl p-6 shadow-sm border-2 transition-colors"
                     style={{ borderColor: isWinner ? color : '#E5E7EB' }}
                   >
-                    {isWinner && (
-                      <span
-                        className="inline-block text-xs font-bold px-3 py-1 rounded-full text-white mb-3"
-                        style={{ backgroundColor: color }}
-                      >
-                        추천
-                      </span>
-                    )}
+                    {/* 고정 높이 배지 영역 — 없는 카드도 동일 공간 확보 */}
+                    <div className="h-7 mb-1">
+                      {isWinner && (
+                        <span
+                          className="inline-block text-xs font-bold px-3 py-1 rounded-full text-white"
+                          style={{ backgroundColor: color }}
+                        >
+                          추천
+                        </span>
+                      )}
+                    </div>
+
                     <h3 className="text-xl font-bold text-gray-900">{LABELS[scenario]}</h3>
 
                     <p className="text-3xl font-bold mt-2" style={{ color }}>
@@ -131,24 +154,42 @@ export function ScenarioSwipeCards() {
                       월 평균 {formatWon(monthlyAvg)}
                     </p>
 
-                    {scenario === 'buy' && (
-                      <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
-                        <div className="flex justify-between text-xs text-gray-500">
-                          <span>총 지출 비용</span>
-                          <span>{formatWon(results.buy.netTotal)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span className="text-emerald-600">시세 상승 이익</span>
-                          <span className="text-emerald-600 font-medium">
-                            -{formatWon(results.buy.assetGain.priceGain)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-xs text-gray-400">
-                          <span>예상 시세</span>
-                          <span>{formatWon(results.buy.assetGain.finalPropertyValue)}</span>
-                        </div>
-                      </div>
-                    )}
+                    {/* 매수 자산이익 3행 — 없는 카드에는 invisible 플레이스홀더 */}
+                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-1">
+                      {scenario === 'buy' ? (
+                        <>
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>총 지출 비용</span>
+                            <span>{formatWon(results.buy.netTotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-xs">
+                            <span className="text-emerald-600">시세 상승 이익</span>
+                            <span className="text-emerald-600 font-medium">
+                              -{formatWon(results.buy.assetGain.priceGain)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-xs text-gray-400">
+                            <span>예상 시세</span>
+                            <span>{formatWon(results.buy.assetGain.finalPropertyValue)}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="invisible flex justify-between text-xs">
+                            <span>placeholder</span>
+                            <span>-</span>
+                          </div>
+                          <div className="invisible flex justify-between text-xs">
+                            <span>placeholder</span>
+                            <span>-</span>
+                          </div>
+                          <div className="invisible flex justify-between text-xs">
+                            <span>placeholder</span>
+                            <span>-</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
 
                     <button
                       onClick={() => setDetailScenario(scenario)}
