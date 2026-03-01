@@ -45,7 +45,7 @@
 │   │   ├── inputs/
 │   │   │   ├── PriceStepCard.tsx            # Step 1: 핵심 가격 입력 (3종 한번에)
 │   │   │   ├── PeriodStepCard.tsx           # Step 2: 거주 기간 슬라이더
-│   │   │   ├── AdvancedSheet.tsx            # 고급 설정 바텀시트 (선택사항)
+│   │   │   ├── AdvancedSheet.tsx            # 고급 설정 — 시나리오별 3개 버튼 + 각각의 바텀시트
 │   │   │   ├── NumberPadInput.tsx           # 토스 스타일 숫자 키패드
 │   │   │   ├── PresetButtons.tsx            # 금액 프리셋 버튼 (1억/3억/5억…)
 │   │   │   └── SliderWithLabel.tsx          # 레이블 + 슬라이더 + 값 표시
@@ -1145,9 +1145,17 @@ export function formatRate(rate: number, decimals = 1): string {
 연 소득      → 5,000만원 (세제혜택 계산)
 ```
 
-#### 고급 설정 (바텀시트에 숨김)
-- 주택 수, 상환 방식, 생애최초 여부, 조정대상지역
-- 면적 (세액공제 자격 계산용)
+#### 고급 설정 (시나리오별 바텀시트에 숨김)
+
+각 시나리오별 독립된 설정 버튼 3개 (`⚙️ 매수 | ⚙️ 전세 | ⚙️ 월세`) → 탭 시 해당 시나리오 전용 바텀시트 오픈
+
+| 시나리오 | 설정 항목 |
+|----------|-----------|
+| **매수** | 주택담보대출 금액, 대출 금리, 연간 주택가격 변동률, 주택 수, 상환 방식, 생애최초 여부, 연 소득 |
+| **전세** | 전세대출 금액, 전세대출 금리, 전세보증보험, 기대 투자수익률, 연 소득 |
+| **월세** | 기대 투자수익률, 연 소득 |
+
+- 연 소득은 3개 시트 모두에 표시되며 변경 시 전체 시나리오에 동기화
 
 ### 12.3 화면 구성 (모바일 단일 컬럼)
 
@@ -1171,7 +1179,7 @@ export function formatRate(rate: number, decimals = 1): string {
 │       5년               │
 │  [1년][3년][5년][10년]  │  ← 프리셋 버튼
 │                         │
-│  ⚙ 상세 설정 >          │  ← 펼치면 고급 옵션 바텀시트
+│  [⚙매수][⚙전세][⚙월세]  │  ← 시나리오별 고급 설정 버튼 3개
 │                         │
 ├─────────────────────────┤
 │  ✅ 전세가 N년 후 자산   │  ← WinnerBanner (자산 기준 추천 — 메인)
@@ -1722,11 +1730,11 @@ export const DEFAULT_MONTHLY_RENT_INPUTS: MonthlyRentInputs = {
 - [x] `NumberPadInput` (바텀시트 + 프리셋 버튼 + 슬라이더)
 - [x] `PriceStepCard` (매수가/전세가/월세 3종 한 화면)
 - [x] `PeriodStepCard` (거주 기간 슬라이더)
-- [x] `AdvancedSheet` (고급 설정 바텀시트)
+- [x] `AdvancedSheet` — 시나리오별 3개 버튼 + 각 전용 바텀시트 (매수/전세/월세 독립 설정)
 - [x] `WinnerBanner`, `ScenarioSwipeCards`
 - [x] `CostDetailSheet` (비용 상세 바텀시트)
 - [x] YearlyCostChart, ScenarioBarChart, BreakevenChart (전체 폭 모바일 최적화)
-- [ ] **AssetProjectionChart** — 순자산 변화 시뮬레이션 라인 차트 (신규)
+- [x] **AssetProjectionChart** — 순자산 변화 시뮬레이션 라인 차트
 
 ### Phase 4 — 마무리 ✅ 완료
 - [x] Framer Motion 전환 애니메이션 적용 (바텀시트, 카드, 배너)
