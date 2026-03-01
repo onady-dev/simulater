@@ -1,0 +1,119 @@
+'use client';
+
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { formatWonCompact } from '@/lib/utils/format';
+import { PresetButtons } from './PresetButtons';
+import type { PresetOption } from '@/types';
+
+interface Props {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  unit: string;
+  presets: PresetOption[];
+  min: number;
+  max: number;
+  step: number;
+  description?: string;
+}
+
+export function NumberPadInput({
+  label,
+  value,
+  onChange,
+  unit,
+  presets,
+  min,
+  max,
+  step,
+  description,
+}: Props) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  const openSheet = () => {
+    setDraft(value);
+    setIsOpen(true);
+  };
+
+  const confirm = () => {
+    onChange(draft);
+    setIsOpen(false);
+  };
+
+  return (
+    <>
+      <button
+        onClick={openSheet}
+        className="w-full bg-white rounded-2xl p-5 text-left shadow-sm border border-gray-100 active:scale-[0.98] transition-transform"
+      >
+        {description && (
+          <p className="text-xs text-gray-400 mb-1">{description}</p>
+        )}
+        <p className="text-sm text-gray-500 mb-1">{label}</p>
+        <p className="text-2xl font-bold text-gray-900">
+          {formatWonCompact(value)}
+          <span className="text-base font-normal text-gray-400 ml-1">{unit}</span>
+        </p>
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex flex-col justify-end"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div
+              className="absolute inset-0 bg-black/40"
+              onClick={() => setIsOpen(false)}
+            />
+            <motion.div
+              className="relative bg-white rounded-t-3xl px-5 pt-5 pb-10 space-y-5"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 30, stiffness: 400 }}
+            >
+              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto" />
+              <p className="text-center text-base font-semibold text-gray-800">{label}</p>
+              <p className="text-center text-4xl font-bold text-blue-500">
+                {formatWonCompact(draft)}{' '}
+                <span className="text-xl text-gray-400">{unit}</span>
+              </p>
+
+              <PresetButtons
+                presets={presets}
+                currentValue={draft}
+                onSelect={setDraft}
+              />
+
+              <input
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={draft}
+                onChange={(e) => setDraft(Number(e.target.value))}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              />
+              <div className="flex justify-between text-xs text-gray-400">
+                <span>{formatWonCompact(min)} {unit}</span>
+                <span>{formatWonCompact(max)} {unit}</span>
+              </div>
+
+              <button
+                onClick={confirm}
+                className="w-full py-4 bg-blue-500 text-white rounded-2xl text-lg font-bold active:bg-blue-600 transition-colors"
+              >
+                확인
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
