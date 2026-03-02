@@ -4,10 +4,11 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { PresetButtons } from './PresetButtons';
 
 const PERIOD_PRESETS = [
-  { label: '1년', value: 1 },
-  { label: '3년', value: 3 },
-  { label: '5년', value: 5 },
+  { label: '2년', value: 2 },
+  { label: '4년', value: 4 },
+  { label: '6년', value: 6 },
   { label: '10년', value: 10 },
+  { label: '20년', value: 20 },
 ];
 
 export function PeriodStepCard() {

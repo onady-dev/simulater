@@ -43,9 +43,9 @@
 │   │   │   └── BottomNav.tsx                # 하단 탭 (입력/결과/분석)
 │   │   │
 │   │   ├── inputs/
-│   │   │   ├── PriceStepCard.tsx            # Step 1: 핵심 가격 입력 (3종 한번에)
+│   │   │   ├── PriceStepCard.tsx            # Step 1: 핵심 가격 입력 + 연소득 슬라이더 + AdvancedSheet 제어
 │   │   │   ├── PeriodStepCard.tsx           # Step 2: 거주 기간 슬라이더
-│   │   │   ├── AdvancedSheet.tsx            # 고급 설정 — 시나리오별 3개 버튼 + 각각의 바텀시트
+│   │   │   ├── AdvancedSheet.tsx            # 고급 설정 바텀시트 — controlled(scenario/onClose)
 │   │   │   ├── NumberPadInput.tsx           # 토스 스타일 숫자 키패드
 │   │   │   ├── PresetButtons.tsx            # 금액 프리셋 버튼 (1억/3억/5억…)
 │   │   │   └── SliderWithLabel.tsx          # 레이블 + 슬라이더 + 값 표시
@@ -133,9 +133,10 @@ export interface BuyInputs {
   loanType: LoanRepaymentType;  // 상환 방식
   yearsToHold: Years;           // 예상 거주 기간
   annualPriceChangeRate: Rate;  // 예상 연간 주택가격 변동률
-  annualIncome: Won;            // 연 소득 (세제혜택 계산용)
-  isFirstHomeBuyer: boolean;    // 생애최초 주택 구입 여부
-  isRegulatedZone: boolean;     // 조정대상지역 여부
+  annualIncome: Won;                   // 연 소득 (세제혜택 계산용)
+  isFirstHomeBuyer: boolean;           // 생애최초 주택 구입 여부
+  isRegulatedZone: boolean;            // 조정대상지역 여부
+  expectedInvestmentReturn: Rate;      // 자기자본 기회비용 계산용 투자수익률 (기본 4%)
 }
 
 export interface JeonseInputs {
@@ -190,10 +191,11 @@ export interface CostBreakdown {
     agentFee: Won;
     total: Won;
   };
+  opportunityCost: Won;  // 자기자본(매수가 - 대출) 기회비용 총계 = equity × r × n
   taxBenefits: { firstHomeReduction: Won; total: Won };
   assetGain: BuyAssetGain;
   grandTotal: Won;
-  netTotal: Won;       // 총 지출 비용 (자산이익 미반영)
+  netTotal: Won;       // 총 지출 비용 (자산이익 미반영, 기회비용 포함)
   effectiveCost: Won;  // 실질 주거비 = netTotal - priceGain  ← 비교 기준값
 }
 
@@ -699,14 +701,18 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
   });
   const disposalTotal = capitalGainsTax + sellAgentFee;
 
-  const grandTotal = initialTotal + annualHoldingTotal * yearsToHold + disposalTotal;
+  // 자기자본 기회비용: 다운페이를 다른 곳에 투자했다면 얻을 수익 (전세·월세의 보증금 기회비용과 대칭)
+  const buyEquity = purchasePrice - loanAmount;
+  const opportunityCost = Math.floor(buyEquity * expectedInvestmentReturn * yearsToHold);
+
+  const grandTotal = initialTotal + annualHoldingTotal * yearsToHold + opportunityCost + disposalTotal;
   const netTotal = grandTotal - acqTax.firstHomeReduction;
 
   // ─── 자산 이익 계산 ────────────────────────────────────────────────────────
   // 시세 상승분 (priceGain): 양도소득세는 이미 disposalCosts에 포함되어 있으므로
   // 별도 차감 없이 gross 상승분만 자산이익으로 인정
   const priceGain = salePrice - purchasePrice;
-  // 실질 주거비: 총지출 - 자산가치 상승분
+  // 실질 주거비: 총지출(기회비용 포함) - 자산가치 상승분
   // → 음수이면 매수로 오히려 순이익 발생
   const effectiveCost = netTotal - priceGain;
 
@@ -716,6 +722,7 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
     annualHoldingCosts: { propertyTax, comprehensiveTax, maintenanceFee,
                           loanInterest: annualLoanInterest, total: annualHoldingTotal },
     disposalCosts: { capitalGainsTax, agentFee: sellAgentFee, total: disposalTotal },
+    opportunityCost,  // 자기자본 기회비용
     taxBenefits: { firstHomeReduction: acqTax.firstHomeReduction, total: acqTax.firstHomeReduction },
     assetGain: {
       finalPropertyValue: salePrice,
@@ -1030,55 +1037,61 @@ interface CalculatorState {
 }
 
 export const useCalculatorStore = create<CalculatorState>()(
-  devtools((set, get) => ({
-    buyInputs: DEFAULT_BUY_INPUTS,
-    jeonseInputs: DEFAULT_JEONSE_INPUTS,
-    monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
-    results: null,
-    activeTab: 'buy',
+  devtools(
+    persist(
+      (set, get) => ({
+        buyInputs: DEFAULT_BUY_INPUTS,
+        jeonseInputs: DEFAULT_JEONSE_INPUTS,
+        monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
+        results: null,
+        activeTab: 'buy' as ScenarioKey,
 
-    updateBuyInputs: (partial) =>
-      set((s) => ({ buyInputs: { ...s.buyInputs, ...partial } })),
+        updateBuyInputs: (partial) => {
+          set((s) => ({ buyInputs: { ...s.buyInputs, ...partial } }));
+          get().calculate();
+        },
 
-    updateJeonseInputs: (partial) =>
-      set((s) => ({ jeonseInputs: { ...s.jeonseInputs, ...partial } })),
+        updateJeonseInputs: (partial) => {
+          set((s) => ({ jeonseInputs: { ...s.jeonseInputs, ...partial } }));
+          get().calculate();
+        },
 
-    updateMonthlyRentInputs: (partial) =>
-      set((s) => ({ monthlyRentInputs: { ...s.monthlyRentInputs, ...partial } })),
+        updateMonthlyRentInputs: (partial) => {
+          set((s) => ({ monthlyRentInputs: { ...s.monthlyRentInputs, ...partial } }));
+          get().calculate();
+        },
 
-    calculate: () => {
-      const { buyInputs, jeonseInputs, monthlyRentInputs } = get();
+        calculate: () => {
+          const { buyInputs, jeonseInputs, monthlyRentInputs } = get();
+          const results = runAllCalculations(buyInputs, jeonseInputs, monthlyRentInputs);
+          set({ results });
+        },
 
-      const buy = calculateBuyScenario(buyInputs);
-      const jeonse = calculateJeonseScenario(jeonseInputs);
-      const monthlyRent = calculateMonthlyRentScenario(monthlyRentInputs);
+        resetAll: () => {
+          set({
+            buyInputs: DEFAULT_BUY_INPUTS,
+            jeonseInputs: DEFAULT_JEONSE_INPUTS,
+            monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
+          });
+          get().calculate();
+        },
 
-      const yearlyCostSeries = generateYearlyCostSeries(
-        buyInputs, jeonseInputs, monthlyRentInputs, buyInputs.yearsToHold
-      );
-      const breakevenSeries = generateBreakevenSeries(buyInputs, jeonseInputs, monthlyRentInputs);
-
-      // 매수는 effectiveCost(실질 주거비), 전세·월세는 netTotal로 대등 비교
-      const nets = {
-        buy: buy.effectiveCost,          // 실질 주거비 = netTotal - 시세상승분
-        jeonse: jeonse.netTotal,
-        monthlyRent: monthlyRent.netTotal,
-      };
-      const recommendation = Object.entries(nets).reduce((a, b) => (b[1] < a[1] ? b : a))[0] as
-        'buy' | 'jeonse' | 'monthlyRent';
-
-      set({ results: { buy, jeonse, monthlyRent, yearlyCostSeries, breakevenSeries, recommendation } });
-    },
-
-    resetAll: () => set({
-      buyInputs: DEFAULT_BUY_INPUTS,
-      jeonseInputs: DEFAULT_JEONSE_INPUTS,
-      monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
-      results: null,
-    }),
-
-    setActiveTab: (tab) => set({ activeTab: tab }),
-  }), { name: 'CalculatorStore' })
+        setActiveTab: (tab) => set({ activeTab: tab }),
+      }),
+      {
+        name: 'calculator-inputs',           // localStorage 키
+        partialize: (state) => ({            // results·activeTab 제외, 입력값만 저장
+          buyInputs: state.buyInputs,
+          jeonseInputs: state.jeonseInputs,
+          monthlyRentInputs: state.monthlyRentInputs,
+        }),
+        onRehydrateStorage: () => (state) => {
+          if (state) state.calculate();      // 복원 후 즉시 재계산
+        },
+      },
+    ),
+    { name: 'CalculatorStore' },
+  ),
 );
 ```
 
@@ -1138,7 +1151,7 @@ export function formatRate(rate: number, decimals = 1): string {
 ```
 대출금액     → 매매가 × 60% (LTV 기본값)
 대출금리     → 3.8% (2025 시중은행 평균)
-거주기간     → 5년 (슬라이더, 1~20년)
+거주기간     → 5년 (슬라이더, 1~20년 / 프리셋: 2·4·6·10·20년)
 가격변동률   → 3% (서울 장기 평균)
 기대수익률   → 4% (예적금 + α 기준)
 보험가입     → HUG 기본
@@ -1147,15 +1160,25 @@ export function formatRate(rate: number, decimals = 1): string {
 
 #### 고급 설정 (시나리오별 바텀시트에 숨김)
 
-각 시나리오별 독립된 설정 버튼 3개 (`⚙️ 매수 | ⚙️ 전세 | ⚙️ 월세`) → 탭 시 해당 시나리오 전용 바텀시트 오픈
+각 시나리오 입력 카드(NumberPadInput) 우상단 ⚙️ 아이콘 → 해당 시나리오 전용 바텀시트 오픈
 
-| 시나리오 | 설정 항목 |
-|----------|-----------|
-| **매수** | 주택담보대출 금액, 대출 금리, 연간 주택가격 변동률, 주택 수, 상환 방식, 생애최초 여부, 연 소득 |
-| **전세** | 전세대출 금액, 전세대출 금리, 전세보증보험, 기대 투자수익률, 연 소득 |
-| **월세** | 기대 투자수익률, 연 소득 |
+| 시나리오 | 카드 위치 | 설정 항목 |
+|----------|-----------|-----------|
+| **매수** | 매수가격 카드 우상단 | 주택담보대출 금액, 대출 금리, 연간 주택가격 변동률, 주택 수, 상환 방식, 생애최초 여부 |
+| **전세** | 전세보증금 카드 우상단 | 전세대출 금액, 전세대출 금리, 전세보증보험 |
+| **월세** | ⚙️ 아이콘 없음 (전용 설정 없음) | — |
 
-- 연 소득은 3개 시트 모두에 표시되며 변경 시 전체 시나리오에 동기화
+#### 공통 설정 (항상 노출되는 슬라이더 카드)
+
+입력 카드 바로 하단 흰색 카드에 두 슬라이더 표시. 변경 시 전체 시나리오 동기화.
+
+| 항목 | 범위 | 기본값 |
+|------|------|--------|
+| 연 소득 (세제혜택 계산) | 1,000만 ~ 3억 | 5,000만 |
+| 기대 투자수익률 (기회비용) | 1% ~ 15% | 4% |
+
+- `AdvancedSheet`는 controlled 컴포넌트 (`scenario: ScenarioKey | null`, `onClose: () => void`)
+- `PriceStepCard`가 `openSheet` 상태를 소유하고 `AdvancedSheet`를 렌더링
 
 ### 12.3 화면 구성 (모바일 단일 컬럼)
 
@@ -1165,21 +1188,27 @@ export function formatRate(rate: number, decimals = 1): string {
 ├─────────────────────────┤
 │                         │
 │  Step 1. 주택 정보 입력  │
-│  ┌──────────────────┐   │
-│  │ 매수가격         │   │  ← 큰 텍스트 + 단위 (억원)
-│  │ [   6억 원    ]  │   │  ← 탭하면 숫자 키패드 등장
-│  └──────────────────┘   │
-│  ┌───────┐ ┌────────┐   │
-│  │전세가 │ │ 월 세  │   │  ← 나란히 2열
-│  │4.5억  │ │150만/월│   │
-│  └───────┘ └────────┘   │
+│  ┌──────────────────⚙┐  │
+│  │ 매수가격           │  │  ← 탭→ 숫자 키패드, ⚙→ 매수 상세설정
+│  │ [   6억 원      ]  │  │
+│  └───────────────────┘  │
+│  ┌─────────────⚙┐       │
+│  │ 전세보증금    │       │  ← ⚙ → 전세 상세설정
+│  │    4.5억      │       │
+│  └───────────────┘       │
+│  ┌────────┐ ┌────────┐   │
+│  │보증금  │ │  월세  │   │  ← ⚙ 없음 (월세 전용 설정 없음)
+│  │1천만   │ │150만/월│   │
+│  └────────┘ └────────┘   │
+│  ┌─────────────────────┐  │
+│  │ 연 소득: 5,000만원  │  │  ← 공통 설정 카드 (항상 노출)
+│  │ 투자수익률: 4%      │  │
+│  └─────────────────────┘  │
 │                         │
 │  Step 2. 거주 예정 기간  │
 │  ━━━━━━━━●━━━━━━━━━━━   │  ← 슬라이더
 │       5년               │
-│  [1년][3년][5년][10년]  │  ← 프리셋 버튼
-│                         │
-│  [⚙매수][⚙전세][⚙월세]  │  ← 시나리오별 고급 설정 버튼 3개
+│  [2년][4년][6년][10년][20년] │  ← 프리셋 버튼
 │                         │
 ├─────────────────────────┤
 │  ✅ 전세가 N년 후 자산   │  ← WinnerBanner (자산 기준 추천 — 메인)
@@ -1722,15 +1751,16 @@ export const DEFAULT_MONTHLY_RENT_INPUTS: MonthlyRentInputs = {
 
 ### Phase 2 — 상태 · 폼 ✅ 완료
 - [x] Zustand 스토어 (입력 변경 시 자동 계산)
+- [x] Zustand `persist` 미들웨어 — 입력값 localStorage 자동 저장 (`calculator-inputs` 키), 재방문 시 복원 후 즉시 재계산
 - [x] Zod 스키마 3종 (+ 추론 타입 연동)
 - [x] `utils/format.ts` 억원/만원 단위 자동 변환
 
 ### Phase 3 — 모바일 UI ✅ 완료
 - [x] TopBar, 단일 컬럼 스크롤 레이아웃
-- [x] `NumberPadInput` (바텀시트 + 프리셋 버튼 + 슬라이더)
-- [x] `PriceStepCard` (매수가/전세가/월세 3종 한 화면)
+- [x] `NumberPadInput` (바텀시트 + 프리셋 + 슬라이더 + `onSettingsClick` ⚙️ 아이콘)
+- [x] `PriceStepCard` (매수가/전세가/월세 + 연소득 슬라이더 + AdvancedSheet 제어)
 - [x] `PeriodStepCard` (거주 기간 슬라이더)
-- [x] `AdvancedSheet` — 시나리오별 3개 버튼 + 각 전용 바텀시트 (매수/전세/월세 독립 설정)
+- [x] `AdvancedSheet` — controlled 컴포넌트, 시나리오 카드 ⚙️ 아이콘으로 오픈 (연소득 분리)
 - [x] `WinnerBanner`, `ScenarioSwipeCards`
 - [x] `CostDetailSheet` (비용 상세 바텀시트)
 - [x] YearlyCostChart, ScenarioBarChart, BreakevenChart (전체 폭 모바일 최적화)
@@ -1754,11 +1784,14 @@ export const DEFAULT_MONTHLY_RENT_INPUTS: MonthlyRentInputs = {
 | 공시가격 근사값 사용 | 공시가 ≈ 시세 × 70% | 인증 없이 공공 API 접근 불가, UI에 명시 |
 | 클라이언트 전용 | 서버 없음, 모든 계산 브라우저에서 | 오프라인 동작, 계산 지연 없음 |
 | 300ms debounce 자동 계산 | 입력 변경 → 자동 재계산 (버튼 없음) | 토스 스타일 즉각 피드백, n년 반복 계산 부담 없음 |
-| 매수 비교값 = effectiveCost | netTotal - priceGain (시세 상승분 차감) | 전세·월세 netTotal과 대등한 실질 주거비 비교 가능 |
+| 매수 비교값 = effectiveCost | netTotal(기회비용 포함) - priceGain | 전세·월세 netTotal과 대등한 실질 주거비 비교 가능 |
 | 양도세 이중 차감 방지 | priceGain = salePrice - purchasePrice (gross) | 양도세는 disposalCosts에 이미 포함, effectiveCost에서 재차감 불필요 |
+| 매수 자기자본 기회비용 포함 | `(매수가 - 대출) × r × n`을 grandTotal에 산입 | 전세·월세의 보증금 기회비용과 대칭적 공정 비교 |
+| 기회비용률 = 공통 설정 | `expectedInvestmentReturn` 단일 슬라이더로 3개 시나리오 동시 적용 | 시나리오 간 비교 조건을 동일하게 유지 |
 | 순자산 비교 기준 현금 = 매수 자기자본 | purchasePrice - loanAmount | 동일 출발점에서 시나리오별 자산 축적을 공정하게 비교 |
 | 전세·월세 여유자금 운용 = 기회비용율 재사용 | expectedInvestmentReturn (기본 4%) | 별도 입력 없이 기존 필드 재사용, UX 복잡도 최소화 |
 | 전세대출 만기일시상환 가정 | 순자산 계산 시 잔여원금 = 원금 그대로 | 실제 가장 일반적인 전세대출 방식 |
+| localStorage 입력값 저장 | `persist` 미들웨어로 buyInputs·jeonseInputs·monthlyRentInputs만 저장, results 제외 | 재방문 시 입력 유지; results는 `onRehydrateStorage`에서 즉시 재계산 |
 | 모바일 퍼스트 단일 컬럼 | 데스크톱 2컬럼 없음, 세로 스크롤 전용 | 모바일 사용자 90%+ 타깃 |
 | 스마트 기본값 | 필수 입력 3개, 나머지 자동 채움 | 입력 피로도 최소화, 이탈률 감소 |
 | 바텀시트 패턴 | 상세 설정/결과 모두 바텀시트 | iOS/Android 네이티브 앱 UX 일관성 |

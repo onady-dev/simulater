@@ -34,6 +34,7 @@ export interface BuyInputs {
   annualIncome: Won;
   isFirstHomeBuyer: boolean;
   isRegulatedZone: boolean;
+  expectedInvestmentReturn: Rate; // 자기자본 기회비용 계산용 투자수익률
 }
 
 export interface JeonseInputs {
@@ -92,6 +93,7 @@ export interface CostBreakdown {
   initialCosts: BuyInitialCosts;
   annualHoldingCosts: BuyAnnualHoldingCosts;
   disposalCosts: BuyDisposalCosts;
+  opportunityCost: Won;   // 자기자본(매수가 - 대출) 기회비용 총계
   taxBenefits: { firstHomeReduction: Won; total: Won };
   assetGain: BuyAssetGain;
   grandTotal: Won;

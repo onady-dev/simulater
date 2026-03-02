@@ -1,7 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { NumberPadInput } from './NumberPadInput';
+import { SliderWithLabel } from './SliderWithLabel';
+import { AdvancedSheet } from './AdvancedSheet';
+import { formatWon, formatRate } from '@/lib/utils/format';
+import type { ScenarioKey } from '@/types';
 
 const BUY_PRICE_PRESETS = [
   { label: '3억', value: 300_000_000 },
@@ -32,6 +37,8 @@ const MONTHLY_RENT_PRESETS = [
 ];
 
 export function PriceStepCard() {
+  const [openSheet, setOpenSheet] = useState<ScenarioKey | null>(null);
+
   const buyInputs = useCalculatorStore((s) => s.buyInputs);
   const jeonseInputs = useCalculatorStore((s) => s.jeonseInputs);
   const monthlyRentInputs = useCalculatorStore((s) => s.monthlyRentInputs);
@@ -39,70 +46,110 @@ export function PriceStepCard() {
   const updateJeonseInputs = useCalculatorStore((s) => s.updateJeonseInputs);
   const updateMonthlyRentInputs = useCalculatorStore((s) => s.updateMonthlyRentInputs);
 
+  const syncIncome = (v: number) => {
+    updateBuyInputs({ annualIncome: v });
+    updateJeonseInputs({ annualIncome: v });
+    updateMonthlyRentInputs({ annualIncome: v });
+  };
+
+  const syncInvestmentReturn = (v: number) => {
+    updateBuyInputs({ expectedInvestmentReturn: v });
+    updateJeonseInputs({ expectedInvestmentReturn: v });
+    updateMonthlyRentInputs({ expectedInvestmentReturn: v });
+  };
+
   return (
-    <div className="space-y-3">
-      <h2 className="text-base font-bold text-gray-900 px-1">주택 정보 입력</h2>
+    <>
+      <div className="space-y-3">
+        <h2 className="text-base font-bold text-gray-900 px-1">주택 정보 입력</h2>
 
-      <NumberPadInput
-        label="매수가격"
-        value={buyInputs.purchasePrice}
-        onChange={(v) => {
-          updateBuyInputs({
-            purchasePrice: v,
-            loanAmount: Math.floor(v * 0.6),
-          });
-        }}
-        unit="억원"
-        presets={BUY_PRICE_PRESETS}
-        min={100_000_000}
-        max={3_000_000_000}
-        step={10_000_000}
-        description="매수 시나리오"
-      />
-
-      <NumberPadInput
-        label="전세보증금"
-        value={jeonseInputs.depositAmount}
-        onChange={(v) => {
-          updateJeonseInputs({
-            depositAmount: v,
-            loanAmount: Math.floor(v * 0.4),
-          });
-        }}
-        unit="억원"
-        presets={JEONSE_PRESETS}
-        min={50_000_000}
-        max={2_000_000_000}
-        step={10_000_000}
-        description="전세 시나리오"
-      />
-
-      <div className="grid grid-cols-2 gap-3 items-stretch">
         <NumberPadInput
-          label="보증금"
-          value={monthlyRentInputs.depositAmount}
-          onChange={(v) => updateMonthlyRentInputs({ depositAmount: v })}
-          unit="만원"
-          presets={DEPOSIT_PRESETS}
-          min={0}
-          max={500_000_000}
-          step={1_000_000}
-          description="월세 시나리오"
-          className="h-full"
+          label="매수가격"
+          value={buyInputs.purchasePrice}
+          onChange={(v) => {
+            updateBuyInputs({
+              purchasePrice: v,
+              loanAmount: Math.floor(v * 0.6),
+            });
+          }}
+          unit="억원"
+          presets={BUY_PRICE_PRESETS}
+          min={100_000_000}
+          max={3_000_000_000}
+          step={10_000_000}
+          description="매수 시나리오"
+          onSettingsClick={() => setOpenSheet('buy')}
         />
+
         <NumberPadInput
-          label="월세"
-          value={monthlyRentInputs.monthlyRent}
-          onChange={(v) => updateMonthlyRentInputs({ monthlyRent: v })}
-          unit="만원/월"
-          presets={MONTHLY_RENT_PRESETS}
-          min={100_000}
-          max={5_000_000}
-          step={50_000}
-          description="월세 시나리오"
-          className="h-full"
+          label="전세보증금"
+          value={jeonseInputs.depositAmount}
+          onChange={(v) => {
+            updateJeonseInputs({
+              depositAmount: v,
+              loanAmount: Math.floor(v * 0.4),
+            });
+          }}
+          unit="억원"
+          presets={JEONSE_PRESETS}
+          min={50_000_000}
+          max={2_000_000_000}
+          step={10_000_000}
+          description="전세 시나리오"
+          onSettingsClick={() => setOpenSheet('jeonse')}
         />
+
+        <div className="grid grid-cols-2 gap-3 items-stretch">
+          <NumberPadInput
+            label="보증금"
+            value={monthlyRentInputs.depositAmount}
+            onChange={(v) => updateMonthlyRentInputs({ depositAmount: v })}
+            unit="만원"
+            presets={DEPOSIT_PRESETS}
+            min={0}
+            max={500_000_000}
+            step={1_000_000}
+            description="월세 시나리오"
+            className="h-full"
+          />
+          <NumberPadInput
+            label="월세"
+            value={monthlyRentInputs.monthlyRent}
+            onChange={(v) => updateMonthlyRentInputs({ monthlyRent: v })}
+            unit="만원/월"
+            presets={MONTHLY_RENT_PRESETS}
+            min={100_000}
+            max={5_000_000}
+            step={50_000}
+            description="월세 시나리오"
+            className="h-full"
+          />
+        </div>
+
+        {/* 공통 설정 — 연 소득 · 기대 투자수익률 */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 space-y-5">
+          <SliderWithLabel
+            label="연 소득 (세제혜택 계산)"
+            value={buyInputs.annualIncome}
+            min={10_000_000}
+            max={300_000_000}
+            step={5_000_000}
+            onChange={syncIncome}
+            formatValue={formatWon}
+          />
+          <SliderWithLabel
+            label="기대 투자수익률 (기회비용)"
+            value={buyInputs.expectedInvestmentReturn}
+            min={0.01}
+            max={0.15}
+            step={0.005}
+            onChange={syncInvestmentReturn}
+            formatValue={formatRate}
+          />
+        </div>
       </div>
-    </div>
+
+      <AdvancedSheet scenario={openSheet} onClose={() => setOpenSheet(null)} />
+    </>
   );
 }

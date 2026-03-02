@@ -1,6 +1,6 @@
 {
-  "name": "주거비 비교 계산기",
-  "short_name": "주거비계산",
+  "name": "집 살까? 전세 살까?",
+  "short_name": "주거비교",
   "description": "매수 vs 전세 vs 월세 비교",
   "start_url": "/calculator",
   "display": "standalone",

@@ -42,6 +42,7 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
     yearsToHold,
     annualPriceChangeRate,
     isFirstHomeBuyer,
+    expectedInvestmentReturn,
   } = inputs;
 
   // 초기 비용
@@ -76,7 +77,11 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
   });
   const disposalTotal = capitalGainsTax + sellAgentFee;
 
-  const grandTotal = initialTotal + annualHoldingTotal * yearsToHold + disposalTotal;
+  // 자기자본 기회비용: 계약금+중도금+잔금(자기자본)을 다른 곳에 투자했다면 얻을 수익
+  const buyEquity = purchasePrice - loanAmount;
+  const opportunityCost = Math.floor(buyEquity * expectedInvestmentReturn * yearsToHold);
+
+  const grandTotal = initialTotal + annualHoldingTotal * yearsToHold + opportunityCost + disposalTotal;
   const netTotal = grandTotal - acqTax.firstHomeReduction;
 
   // 자산 이익: 양도세는 이미 disposalCosts에 포함 → gross 시세 상승분만 차감
@@ -105,6 +110,7 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
       agentFee: sellAgentFee,
       total: disposalTotal,
     },
+    opportunityCost,
     taxBenefits: {
       firstHomeReduction: acqTax.firstHomeReduction,
       total: acqTax.firstHomeReduction,

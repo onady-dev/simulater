@@ -9,7 +9,7 @@ const geistSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: '주거비 비교 계산기',
+  title: '집 살까? 전세 살까?',
   description: '매수 vs 전세 vs 월세 — 어떤 선택이 유리한지 계산해보세요',
   manifest: '/manifest.json',
 };

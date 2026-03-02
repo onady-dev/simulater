@@ -47,6 +47,7 @@ function BuyCostRows({ result, yearsToHold }: { result: CostBreakdown; yearsToHo
     { label: '처분 비용', value: result.disposalCosts.total },
     { label: '양도소득세', value: result.disposalCosts.capitalGainsTax, isSubItem: true },
     { label: '매도 중개수수료', value: result.disposalCosts.agentFee, isSubItem: true },
+    { label: '자기자본 기회비용', value: result.opportunityCost },
     { label: '세제혜택', value: result.taxBenefits.total, isNegative: true },
   ];
 }

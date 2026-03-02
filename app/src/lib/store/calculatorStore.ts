@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import type { BuyInputs, JeonseInputs, MonthlyRentInputs, CalculationResults, ScenarioKey } from '@/types';
 import {
   DEFAULT_BUY_INPUTS,
@@ -25,45 +25,58 @@ interface CalculatorState {
 
 export const useCalculatorStore = create<CalculatorState>()(
   devtools(
-    (set, get) => ({
-      buyInputs: DEFAULT_BUY_INPUTS,
-      jeonseInputs: DEFAULT_JEONSE_INPUTS,
-      monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
-      results: null,
-      activeTab: 'buy' as ScenarioKey,
+    persist(
+      (set, get) => ({
+        buyInputs: DEFAULT_BUY_INPUTS,
+        jeonseInputs: DEFAULT_JEONSE_INPUTS,
+        monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
+        results: null,
+        activeTab: 'buy' as ScenarioKey,
 
-      updateBuyInputs: (partial) => {
-        set((s) => ({ buyInputs: { ...s.buyInputs, ...partial } }));
-        get().calculate();
+        updateBuyInputs: (partial) => {
+          set((s) => ({ buyInputs: { ...s.buyInputs, ...partial } }));
+          get().calculate();
+        },
+
+        updateJeonseInputs: (partial) => {
+          set((s) => ({ jeonseInputs: { ...s.jeonseInputs, ...partial } }));
+          get().calculate();
+        },
+
+        updateMonthlyRentInputs: (partial) => {
+          set((s) => ({ monthlyRentInputs: { ...s.monthlyRentInputs, ...partial } }));
+          get().calculate();
+        },
+
+        calculate: () => {
+          const { buyInputs, jeonseInputs, monthlyRentInputs } = get();
+          const results = runAllCalculations(buyInputs, jeonseInputs, monthlyRentInputs);
+          set({ results });
+        },
+
+        resetAll: () => {
+          set({
+            buyInputs: DEFAULT_BUY_INPUTS,
+            jeonseInputs: DEFAULT_JEONSE_INPUTS,
+            monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
+          });
+          get().calculate();
+        },
+
+        setActiveTab: (tab) => set({ activeTab: tab }),
+      }),
+      {
+        name: 'calculator-inputs',
+        partialize: (state) => ({
+          buyInputs: state.buyInputs,
+          jeonseInputs: state.jeonseInputs,
+          monthlyRentInputs: state.monthlyRentInputs,
+        }),
+        onRehydrateStorage: () => (state) => {
+          if (state) state.calculate();
+        },
       },
-
-      updateJeonseInputs: (partial) => {
-        set((s) => ({ jeonseInputs: { ...s.jeonseInputs, ...partial } }));
-        get().calculate();
-      },
-
-      updateMonthlyRentInputs: (partial) => {
-        set((s) => ({ monthlyRentInputs: { ...s.monthlyRentInputs, ...partial } }));
-        get().calculate();
-      },
-
-      calculate: () => {
-        const { buyInputs, jeonseInputs, monthlyRentInputs } = get();
-        const results = runAllCalculations(buyInputs, jeonseInputs, monthlyRentInputs);
-        set({ results });
-      },
-
-      resetAll: () => {
-        set({
-          buyInputs: DEFAULT_BUY_INPUTS,
-          jeonseInputs: DEFAULT_JEONSE_INPUTS,
-          monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
-        });
-        get().calculate();
-      },
-
-      setActiveTab: (tab) => set({ activeTab: tab }),
-    }),
+    ),
     { name: 'CalculatorStore' },
   ),
 );

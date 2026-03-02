@@ -13,6 +13,7 @@ export const DEFAULT_BUY_INPUTS: BuyInputs = {
   annualIncome: 50_000_000,
   isFirstHomeBuyer: false,
   isRegulatedZone: false,
+  expectedInvestmentReturn: 0.04,
 };
 
 export const DEFAULT_JEONSE_INPUTS: JeonseInputs = {

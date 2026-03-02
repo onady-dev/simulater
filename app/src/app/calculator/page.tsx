@@ -5,7 +5,6 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { TopBar } from '@/components/layout/TopBar';
 import { PriceStepCard } from '@/components/inputs/PriceStepCard';
 import { PeriodStepCard } from '@/components/inputs/PeriodStepCard';
-import { AdvancedSheet } from '@/components/inputs/AdvancedSheet';
 import { WinnerBanner } from '@/components/results/WinnerBanner';
 import { ScenarioSwipeCards } from '@/components/results/ScenarioSwipeCards';
 import { YearlyCostChart } from '@/components/charts/YearlyCostChart';
@@ -32,7 +31,6 @@ export default function CalculatorPage() {
         <section className="px-4 space-y-3">
           <PriceStepCard />
           <PeriodStepCard />
-          <AdvancedSheet />
         </section>
 
         {/* 결과 배너 */}
