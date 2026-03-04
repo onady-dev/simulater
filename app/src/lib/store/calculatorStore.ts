@@ -1,12 +1,23 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
-import type { BuyInputs, JeonseInputs, MonthlyRentInputs, CalculationResults, ScenarioKey } from '@/types';
+import type {
+  BuyInputs,
+  JeonseInputs,
+  MonthlyRentInputs,
+  CalculationResults,
+  ScenarioKey,
+  InflationScenario,
+  ScenarioComparison,
+  Recommendation,
+} from '@/types';
 import {
   DEFAULT_BUY_INPUTS,
   DEFAULT_JEONSE_INPUTS,
   DEFAULT_MONTHLY_RENT_INPUTS,
 } from '@/lib/constants/defaults';
 import { runAllCalculations } from '@/lib/calculations';
+import { getInflationParameters, compareInflationScenarios } from '@/lib/calculations/inflation';
+import { generateRecommendation } from '@/lib/calculations/recommendation';
 
 interface CalculatorState {
   buyInputs: BuyInputs;
@@ -14,10 +25,14 @@ interface CalculatorState {
   monthlyRentInputs: MonthlyRentInputs;
   results: CalculationResults | null;
   activeTab: ScenarioKey;
+  inflationScenario: InflationScenario;
+  scenarioComparisons: ScenarioComparison[] | null;
+  recommendation: Recommendation | null;
 
   updateBuyInputs: (partial: Partial<BuyInputs>) => void;
   updateJeonseInputs: (partial: Partial<JeonseInputs>) => void;
   updateMonthlyRentInputs: (partial: Partial<MonthlyRentInputs>) => void;
+  setInflationScenario: (scenario: InflationScenario) => void;
   calculate: () => void;
   resetAll: () => void;
   setActiveTab: (tab: ScenarioKey) => void;
@@ -32,6 +47,9 @@ export const useCalculatorStore = create<CalculatorState>()(
         monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
         results: null,
         activeTab: 'buy' as ScenarioKey,
+        inflationScenario: 'medium' as InflationScenario,
+        scenarioComparisons: null,
+        recommendation: null,
 
         updateBuyInputs: (partial) => {
           set((s) => ({ buyInputs: { ...s.buyInputs, ...partial } }));
@@ -48,10 +66,37 @@ export const useCalculatorStore = create<CalculatorState>()(
           get().calculate();
         },
 
+        setInflationScenario: (scenario) => {
+          set({ inflationScenario: scenario });
+          get().calculate();
+        },
+
         calculate: () => {
-          const { buyInputs, jeonseInputs, monthlyRentInputs } = get();
-          const results = runAllCalculations(buyInputs, jeonseInputs, monthlyRentInputs);
-          set({ results });
+          const { buyInputs, jeonseInputs, monthlyRentInputs, inflationScenario } = get();
+
+          // 인플레이션 시나리오 파라미터 적용
+          const params = getInflationParameters(inflationScenario);
+          const adjustedBuy: BuyInputs = {
+            ...buyInputs,
+            annualPriceChangeRate: params.housingPriceGrowth,
+            loanRate: params.loanInterestRate,
+            expectedInvestmentReturn: params.expectedInvestmentReturn,
+          };
+          const adjustedJeonse: JeonseInputs = {
+            ...jeonseInputs,
+            loanRate: params.loanInterestRate,
+            expectedInvestmentReturn: params.expectedInvestmentReturn,
+          };
+          const adjustedRent: MonthlyRentInputs = {
+            ...monthlyRentInputs,
+            expectedInvestmentReturn: params.expectedInvestmentReturn,
+          };
+
+          const results = runAllCalculations(adjustedBuy, adjustedJeonse, adjustedRent);
+          const scenarioComparisons = compareInflationScenarios(buyInputs, jeonseInputs, monthlyRentInputs);
+          const recommendation = generateRecommendation(inflationScenario, results, adjustedBuy);
+
+          set({ results, scenarioComparisons, recommendation });
         },
 
         resetAll: () => {
@@ -59,6 +104,7 @@ export const useCalculatorStore = create<CalculatorState>()(
             buyInputs: DEFAULT_BUY_INPUTS,
             jeonseInputs: DEFAULT_JEONSE_INPUTS,
             monthlyRentInputs: DEFAULT_MONTHLY_RENT_INPUTS,
+            inflationScenario: 'medium',
           });
           get().calculate();
         },
@@ -71,6 +117,7 @@ export const useCalculatorStore = create<CalculatorState>()(
           buyInputs: state.buyInputs,
           jeonseInputs: state.jeonseInputs,
           monthlyRentInputs: state.monthlyRentInputs,
+          inflationScenario: state.inflationScenario,
         }),
         onRehydrateStorage: () => (state) => {
           if (state) state.calculate();

@@ -177,3 +177,34 @@ export interface PresetOption {
   label: string;
   value: Won;
 }
+
+// ─── 인플레이션 시나리오 ─────────────────────────────────────────────────────
+
+export type InflationScenario = 'low' | 'medium' | 'high';
+
+export interface InflationParameters {
+  inflationRate: Rate;
+  housingPriceGrowth: Rate;
+  rentGrowthRate: Rate;
+  loanInterestRate: Rate;
+  expectedInvestmentReturn: Rate;
+}
+
+export interface ScenarioComparison {
+  scenario: InflationScenario;
+  parameters: InflationParameters;
+  results: CalculationResults;
+  realAssetValue: {
+    buy: Won;
+    jeonse: Won;
+    monthlyRent: Won;
+  };
+}
+
+export interface Recommendation {
+  primary: ScenarioKey;
+  secondary: ScenarioKey;
+  reasoning: string[];
+  warnings: string[];
+  leverageAdvice?: string;
+}
