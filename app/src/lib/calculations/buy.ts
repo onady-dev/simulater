@@ -1,9 +1,9 @@
 import type { BuyInputs, CostBreakdown } from '@/types';
 import {
   calculateAcquisitionTax,
-  calculatePropertyTax,
-  calculateComprehensiveRealEstateTax,
   calculateCapitalGainsTax,
+  calculatePropertyTaxByYear,
+  calculateComprehensiveRealEstateTaxByYear,
 } from './taxes';
 import { calculateBuyAgentFee } from './agentFees';
 import { calculateLoanRepayment } from './loanRepayment';
@@ -54,13 +54,24 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
   const initialTotal =
     acqTax.total + buyAgentFee + legalFee + bondDiscount + registrationTax + stampDuty;
 
-  // 연간 보유비용
-  const propertyTax = calculatePropertyTax(purchasePrice);
-  const comprehensiveTax = calculateComprehensiveRealEstateTax(purchasePrice, numHomes);
+  // 연도별 재산세/종부세 합산
+  let totalPropertyTax = 0;
+  let totalComprehensiveTax = 0;
+  
+  for (let year = 1; year <= yearsToHold; year++) {
+    totalPropertyTax += calculatePropertyTaxByYear(purchasePrice, annualPriceChangeRate, year);
+    totalComprehensiveTax += calculateComprehensiveRealEstateTaxByYear(
+      purchasePrice, numHomes, annualPriceChangeRate, year
+    );
+  }
+  
+  const avgPropertyTax = Math.floor(totalPropertyTax / yearsToHold);
+  const avgComprehensiveTax = Math.floor(totalComprehensiveTax / yearsToHold);
+  
   const maintenanceFee = estimateAnnualMaintenanceFee(areaM2);
   const loanSchedule = calculateLoanRepayment(loanAmount, loanRate, loanType, 30, yearsToHold);
   const annualLoanInterest = loanSchedule.yearlyInterestSchedule[0] ?? 0;
-  const annualHoldingTotal = propertyTax + comprehensiveTax + maintenanceFee + annualLoanInterest;
+  const annualHoldingTotal = avgPropertyTax + avgComprehensiveTax + maintenanceFee + annualLoanInterest;
 
   // 처분 비용
   const salePrice = Math.floor(
@@ -77,14 +88,14 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
   });
   const disposalTotal = capitalGainsTax + sellAgentFee;
 
-  // 자기자본 기회비용: 계약금+중도금+잔금(자기자본)을 다른 곳에 투자했다면 얻을 수익
+  // 자기자본 기회비용
   const buyEquity = purchasePrice - loanAmount;
   const opportunityCost = Math.floor(buyEquity * expectedInvestmentReturn * yearsToHold);
 
   const grandTotal = initialTotal + annualHoldingTotal * yearsToHold + opportunityCost + disposalTotal;
   const netTotal = grandTotal - acqTax.firstHomeReduction;
 
-  // 자산 이익: 양도세는 이미 disposalCosts에 포함 → gross 시세 상승분만 차감
+  // 자산 이익
   const priceGain = salePrice - purchasePrice;
   const effectiveCost = netTotal - priceGain;
 
@@ -99,8 +110,8 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
       total: initialTotal,
     },
     annualHoldingCosts: {
-      propertyTax,
-      comprehensiveTax,
+      propertyTax: avgPropertyTax,
+      comprehensiveTax: avgComprehensiveTax,
       maintenanceFee,
       loanInterest: annualLoanInterest,
       total: annualHoldingTotal,

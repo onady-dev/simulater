@@ -45,6 +45,7 @@ export interface JeonseInputs {
   yearsToHold: Years;
   expectedInvestmentReturn: Rate;
   annualIncome: Won;
+  rentGrowthRate?: Rate;
 }
 
 export interface MonthlyRentInputs {
@@ -54,6 +55,7 @@ export interface MonthlyRentInputs {
   expectedInvestmentReturn: Rate;
   annualIncome: Won;
   areaM2: number;
+  rentGrowthRate?: Rate;
   marketPrice: Won;
 }
 

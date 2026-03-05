@@ -149,3 +149,29 @@ function applyCapitalGainsTaxRate(capitalGain: number, yearsHeld: number, isResi
   }
   return 0;
 }
+
+
+/**
+ * 연도별 재산세 계산 (시세 상승 반영)
+ */
+export function calculatePropertyTaxByYear(
+  purchasePrice: number,
+  annualPriceChangeRate: number,
+  year: number
+): number {
+  const currentMarketPrice = purchasePrice * Math.pow(1 + annualPriceChangeRate, year - 1);
+  return calculatePropertyTax(currentMarketPrice);
+}
+
+/**
+ * 연도별 종합부동산세 계산 (시세 상승 반영)
+ */
+export function calculateComprehensiveRealEstateTaxByYear(
+  purchasePrice: number,
+  numHomes: HomeOwnerCount,
+  annualPriceChangeRate: number,
+  year: number
+): number {
+  const currentMarketPrice = purchasePrice * Math.pow(1 + annualPriceChangeRate, year - 1);
+  return calculateComprehensiveRealEstateTax(currentMarketPrice, numHomes);
+}

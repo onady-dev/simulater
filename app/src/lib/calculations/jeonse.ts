@@ -19,6 +19,24 @@ function calcJeonseLoanDeduction(annualIncome: number, annualInterest: number): 
   return Math.floor(deductionAmount * marginalRate);
 }
 
+/**
+ * 연도별 전세 보증금 계산 (2년마다 재계약, 법정 상한 5%)
+ */
+function calculateJeonseDepositByYear(
+  initialDeposit: number,
+  rentGrowthRate: number,
+  year: number
+): number {
+  const LEGAL_CAP = 0.05;
+  const CONTRACT_PERIOD = 2;
+  
+  const renewalCount = Math.floor((year - 1) / CONTRACT_PERIOD);
+  if (renewalCount === 0) return initialDeposit;
+  
+  const increaseRate = Math.min(rentGrowthRate, LEGAL_CAP);
+  return Math.floor(initialDeposit * Math.pow(1 + increaseRate, renewalCount));
+}
+
 export function calculateJeonseScenario(inputs: JeonseInputs): JeonseCostBreakdown {
   const {
     depositAmount,
@@ -28,6 +46,7 @@ export function calculateJeonseScenario(inputs: JeonseInputs): JeonseCostBreakdo
     yearsToHold,
     expectedInvestmentReturn,
     annualIncome,
+    rentGrowthRate,
   } = inputs;
 
   const agentFee = calculateRentAgentFee(depositAmount);
@@ -37,15 +56,29 @@ export function calculateJeonseScenario(inputs: JeonseInputs): JeonseCostBreakdo
   // 전세대출은 만기일시상환 (이자만)
   const annualInterest = Math.floor(loanAmount * loanRate);
   const totalLoanInterest = annualInterest * yearsToHold;
-  const opportunityCost = Math.floor(depositAmount * expectedInvestmentReturn * yearsToHold);
-  const periodicTotal = totalLoanInterest + opportunityCost;
+  
+  // 보증금 상승 반영 (2년마다 재계약, 법정 상한 5%)
+  let totalOpportunityCost = 0;
+  if (rentGrowthRate && yearsToHold > 2) {
+    // 연도별 보증금 변화에 따른 기회비용 계산
+    for (let year = 1; year <= yearsToHold; year++) {
+      const currentDeposit = calculateJeonseDepositByYear(depositAmount, rentGrowthRate, year);
+      const ownDeposit = Math.max(0, currentDeposit - loanAmount);
+      totalOpportunityCost += Math.floor(ownDeposit * expectedInvestmentReturn);
+    }
+  } else {
+    // 기존 로직: 고정 보증금
+    totalOpportunityCost = Math.floor(depositAmount * expectedInvestmentReturn * yearsToHold);
+  }
+  
+  const periodicTotal = totalLoanInterest + totalOpportunityCost;
 
   const annualTaxBenefit = calcJeonseLoanDeduction(annualIncome, annualInterest);
   const totalTaxBenefit = annualTaxBenefit * yearsToHold;
 
   return {
     initialCosts: { agentFee, insurancePremium, total: initialTotal },
-    periodicCosts: { loanInterest: totalLoanInterest, opportunityCost, total: periodicTotal },
+    periodicCosts: { loanInterest: totalLoanInterest, opportunityCost: totalOpportunityCost, total: periodicTotal },
     taxBenefits: { loanDeduction: totalTaxBenefit, total: totalTaxBenefit },
     grandTotal: initialTotal + periodicTotal,
     netTotal: initialTotal + periodicTotal - totalTaxBenefit,

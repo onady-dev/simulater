@@ -1,2157 +1,1199 @@
-# 부동산 매수 vs 전세 vs 월세 비교 계산기 연구 문서
+# App 폴더 상세 분석 보고서
 
-## 1. 개요
+## 1. 프로젝트 개요
 
-이 문서는 부동산 매수, 전세, 월세 중 어떤 선택이 자산 보전 관점에서 유리한지 계산하는 웹 서비스를 개발하기 위한 연구 자료입니다. 설정한 기간 동안 총 비용과 자산 변화를 비교하여 최적의 주거 형태를 판단할 수 있도록 합니다.
+### 1.1 기본 정보
+- **프로젝트명**: 집 살까? 전세 살까?
+- **프레임워크**: Next.js 14.2.35 (App Router)
+- **빌드 타입**: Static Export (`output: 'export'`)
+- **개발 서버**: 0.0.0.0:4000
+- **언어**: TypeScript (strict mode)
 
----
-
-## 2. 기본 개념 정의
-
-### 2.1 매수 (주택 구입)
-주택을 직접 소유하는 방식입니다. 초기 자본이 많이 필요하지만, 주택 가격 상승 시 자산 증가 효과를 누릴 수 있습니다.
-
-### 2.2 전세
-보증금을 집주인에게 맡기고 월세 없이 거주하는 한국 고유의 임대 방식입니다. 계약 종료 시 보증금 전액을 돌려받습니다.
-
-### 2.3 월세
-적은 보증금을 내고 매월 일정 금액의 임대료를 지불하는 방식입니다.
-
-### 2.4 반전세
-전세와 월세의 중간 형태로, 전세보다 적은 보증금을 내고 일부 금액을 월세로 지불합니다.
-
----
-
-## 3. 매수 시 발생하는 비용
-
-### 3.1 초기 비용 (취득 시 1회성)
-
-#### 3.1.1 취득세
-- **정의**: 부동산 취득 시 납부하는 지방세
-- **신고 기한**: 취득일로부터 60일 이내
-- **세율 (주택)**:
-
-| 취득가액 | 1주택 | 2주택 | 3주택 이상 |
-|---------|-------|-------|-----------|
-| 6억 이하 | 1% | 1~3% | 12% |
-| 6억~9억 | 1~3% | 1~3% | 12% |
-| 9억 초과 | 3% | 3% | 12% |
-
-- **지방교육세**: 취득세의 10%
-- **농어촌특별세**: 취득세의 10% (전용면적 85㎡ 초과 시)
-
-#### 3.1.2 생애최초 주택 구입 감면
-- 12억 원 이하 주택 구입 시 취득세 최대 200만 원 감면
-
-#### 3.1.3 중개수수료 (복비)
-| 거래금액 | 상한요율 | 한도액 |
-|---------|---------|--------|
-| 5천만 원 미만 | 0.6% | 25만 원 |
-| 5천만~2억 원 | 0.5% | 80만 원 |
-| 2억~9억 원 | 0.4% | 없음 |
-| 9억~12억 원 | 0.5% | 없음 |
-| 12억~15억 원 | 0.6% | 없음 |
-| 15억 원 이상 | 0.7% | 없음 |
-
-※ 상한요율 범위 내에서 협의 가능
-
-#### 3.1.4 법무사 비용
-- 소유권이전등기 대행 수수료
-- 대략 30~80만 원 (거래금액에 따라 변동)
-- 대한법무사협회 기준에 따른 상한선 존재
-
-#### 3.1.5 국민주택채권 매입비용
-- **계산**: 시가표준액 × 매입률
-- **할인율**: 주택도시기금에서 매일 발표 (약 3~5% 수준)
-- **실제 부담금**: 채권매입금액 × 할인율
-- 예: 5억 원 주택, 매입률 13%, 할인율 4%의 경우
-  - 채권매입액: 5억 × 13% = 6,500만 원
-  - 실부담금: 6,500만 원 × 4% = 260만 원
-
-#### 3.1.6 등기비용
-- 등록면허세: 취득가액의 0.2%
-- 인지세: 거래금액별 차등 (1억~10억: 15만 원 등)
-
-### 3.2 보유 비용 (매년 발생)
-
-#### 3.2.1 재산세
-- **과세 기준일**: 매년 6월 1일
-- **납부 시기**: 7월, 9월 (절반씩)
-- **과세표준**: 공시가격 × 공정시장가액비율(60%)
-
-| 과세표준 | 세율 |
-|---------|------|
-| 6천만 원 이하 | 0.1% |
-| 6천만~1.5억 원 | 0.15% |
-| 1.5억~3억 원 | 0.25% |
-| 3억 원 초과 | 0.4% |
-
-※ 1가구 1주택자 특례세율 적용 가능
-
-#### 3.2.2 종합부동산세
-- **과세 기준**: 공시가격 합계가 기본공제(9억 원, 1세대 1주택 12억 원) 초과 시
-- **납부 시기**: 12월 1일~15일
-- **공정시장가액비율**: 60% (2022년 기준)
-
-| 과세표준 | 세율 | 누진공제 |
-|---------|------|---------|
-| 3억 원 이하 | 0.5% | - |
-| 6억 원 이하 | 0.7% | 60만 원 |
-| 12억 원 이하 | 1.0% | 240만 원 |
-| 25억 원 이하 | 1.3% | 600만 원 |
-| 50억 원 이하 | 1.5% | 1,100만 원 |
-| 94억 원 이하 | 2.0% | 3,600만 원 |
-| 94억 원 초과 | 2.7% | 10,180만 원 |
-
-#### 3.2.3 관리비/유지비
-- 서울 84㎡ 아파트 평균: 월 28만 원 (연 336만 원)
-- 전국 평균: ㎡당 월 2,920원
-- **구성 항목**:
-  - 공용관리비 (일반관리비, 미화비, 경비비, 소독비)
-  - 수선유지비
-  - 장기수선충당금
-  - 전용사용료 (난방비, 전기료 등)
-
-#### 3.2.4 주택담보대출 이자
-- **2025년 평균 금리**: 연 3.3%~4.7% (은행별 상이)
-- 5대 시중은행 평균: 연 3.5~3.9%
-- 인터넷은행: 연 3.3~3.9%
-- **LTV (담보인정비율)**:
-  - 일반: 최대 70%
-  - 규제지역: 최대 40%
-- **DTI (총부채상환비율)**: 연소득 대비 부채 상환 비율 제한
-- **DSR (총부채원리금상환비율)**: 모든 대출의 원리금 상환액 기준
-
-### 3.3 처분 비용 (매도 시)
-
-#### 3.3.1 양도소득세
-- **계산 순서**:
-  1. 양도차익 = 양도가액 - 취득가액 - 필요경비
-  2. 양도소득금액 = 양도차익 - 장기보유특별공제
-  3. 과세표준 = 양도소득금액 - 기본공제(250만 원)
-  4. 산출세액 = 과세표준 × 세율
-
-- **세율** (기본세율, 보유기간 2년 이상):
-
-| 과세표준 | 세율 | 누진공제 |
-|---------|------|---------|
-| 1,400만 원 이하 | 6% | - |
-| 5,000만 원 이하 | 15% | 126만 원 |
-| 8,800만 원 이하 | 24% | 576만 원 |
-| 1.5억 원 이하 | 35% | 1,544만 원 |
-| 3억 원 이하 | 38% | 1,994만 원 |
-| 5억 원 이하 | 40% | 2,594만 원 |
-| 10억 원 이하 | 42% | 3,594만 원 |
-| 10억 원 초과 | 45% | 6,594만 원 |
-
-- **1세대 1주택 비과세 요건**:
-  - 2년 이상 보유
-  - 2년 이상 거주
-  - 양도가액 12억 원 이하 (초과분은 과세)
-
-- **장기보유특별공제**:
-  - 보유기간 3년 이상부터 적용
-  - 연 2~4%, 최대 30~80%
-
-#### 3.3.2 중개수수료
-- 매도 시에도 중개수수료 발생 (매수 시와 동일 요율)
-
----
-
-## 4. 전세 시 발생하는 비용
-
-### 4.1 초기 비용
-
-#### 4.1.1 전세보증금
-- 목돈 필요 (보통 수억 원 수준)
-- 계약 종료 시 전액 반환받음
-
-#### 4.1.2 전세대출 이자 (대출 시)
-- **2025년 평균 금리**: 연 2.7%~4.7%
-- 최저: 농협은행 연 2.72%
-- 평균: 연 3.75%
-
-#### 4.1.3 중개수수료
-| 보증금 | 상한요율 | 한도액 |
-|--------|---------|--------|
-| 5천만 원 미만 | 0.5% | 20만 원 |
-| 5천만~1억 원 | 0.4% | 30만 원 |
-| 1억~6억 원 | 0.3% | 없음 |
-| 6억~12억 원 | 0.4% | 없음 |
-| 12억~15억 원 | 0.5% | 없음 |
-| 15억 원 이상 | 0.6% | 없음 |
-
-#### 4.1.4 전세보증보험료
-전세금 반환 보증을 위한 보험
-
-| 기관 | 보증료율 (연) | 특징 |
-|------|-------------|------|
-| HF (주택금융공사) | 0.04%~0.18% | 가장 저렴, HF 전세대출 이용자만 가입 가능 |
-| HUG (주택도시보증공사) | 0.111%~0.211% | 사회초년생 60% 할인 |
-| SGI (서울보증보험) | 0.183%~0.208% | 한도 제한 적음, 가장 비쌈 |
-
-예: 보증금 3억 원, 2년 계약 시
-- HUG: 약 40만 원
-- SGI: 약 62만 원
-
-### 4.2 기회비용
-
-#### 4.2.1 전세보증금의 기회비용
-- 목돈을 전세보증금으로 묶어둠으로써 발생하는 투자 기회 손실
-- **계산**: 전세보증금 × 기대투자수익률 × 거주기간
-- 예: 3억 원 × 5% × 2년 = 3,000만 원
-
-### 4.3 세제 혜택
-
-#### 4.3.1 전세대출 원리금 소득공제
-- **공식 명칭**: 주택임차차입금 원리금 상환액 소득공제
-- **공제 한도**: 연 400만 원
-- **공제율**: 상환액의 40%
-- **조건**:
-  - 무주택 세대주
-  - 국민주택규모 (85㎡ 이하, 비수도권 100㎡ 이하)
-  - 금융기관 또는 개인에게 차입
-
-### 4.4 리스크
-
-#### 4.4.1 깡통전세 위험
-- **정의**: 전세가 + 선순위 채권이 시세의 70~80% 초과하는 상태
-- **위험**: 집값 하락 시 보증금 전액 회수 불가
-- **예방**: 등기부등본 확인, 전세가율 확인
-
-#### 4.4.2 전세사기 유형
-- 이중계약 (동일 물건에 여러 세입자)
-- 신탁부동산 계약
-- 깡통전세 유도
-
----
-
-## 5. 월세 시 발생하는 비용
-
-### 5.1 월 고정 비용
-
-#### 5.1.1 월세
-- 매월 지출되는 임대료
-- 돌려받지 못하는 비용
-
-#### 5.1.2 관리비
-- 보통 월세와 별도로 청구
-- 월 10~30만 원 수준 (규모/지역에 따라 상이)
-
-### 5.2 초기 비용
-
-#### 5.2.1 보증금
-- 전세보다 적은 금액 (보통 월세의 10~20배)
-- 계약 종료 시 반환
-
-#### 5.2.2 중개수수료
-- **거래금액 계산**: 보증금 + (월세 × 100)
-- 계산 금액이 5천만 원 미만 시: 보증금 + (월세 × 70)
-
-예: 보증금 2,000만 원, 월세 40만 원
-- 거래금액: 2,000만 + (40만 × 100) = 6,000만 원
-- 중개수수료: 6,000만 × 0.4% = 24만 원
-
-### 5.3 세제 혜택
-
-#### 5.3.1 월세 세액공제
-- **공제 조건**:
-  - 무주택 세대주 (또는 세대원)
-  - 총급여 8,000만 원 이하 (종합소득 7,000만 원 이하)
-  - 전용면적 85㎡ 이하 또는 기준시가 4억 원 이하
-
-- **공제율**:
-  - 총급여 5,500만 원 이하: 17%
-  - 총급여 5,500만~8,000만 원: 15%
-
-- **공제 한도**: 연 1,000만 원 (월세액 기준)
-
-- **예시**: 월세 50만 원 × 12개월 = 600만 원
-  - 공제액: 600만 × 15% = 90만 원
-
-### 5.4 기회비용
-
-#### 5.4.1 보증금의 기회비용
-- 전세보다 적어 기회비용도 적음
-- **계산**: 보증금 × 기대투자수익률 × 거주기간
-
----
-
-## 6. 전월세전환율 계산
-
-### 6.1 법정 전월세전환율
-- **2025년 상한**: 연 5.0% (한국은행 기준금리 + 2%)
-- 주택임대차보호법 제7조의2에 따른 상한선
-
-### 6.2 계산 공식
-
-```
-월세 = (전세금 - 보증금) × 전환율 ÷ 12
-전세금 = 보증금 + (월세 × 12 ÷ 전환율)
-```
-
-### 6.3 예시
-- 전세 3억 원 → 보증금 2억 원 반전세 전환 (전환율 5%)
-- 월세 = (3억 - 2억) × 5% ÷ 12 = 약 41.7만 원
-
----
-
-## 7. 비교 계산 방법론
-
-### 7.1 총비용 비교 공식
-
-#### 7.1.1 매수 시 총비용 (n년 기준)
-```
-총비용 = 초기비용 + (연간보유비용 × n) + 처분비용 - 매도차익 - 세제혜택
-```
-
-**상세 계산**:
-```
-초기비용 = 취득세 + 중개수수료 + 법무사비용 + 채권할인비용 + 등기비용
-연간보유비용 = 재산세 + 종부세 + 관리비 + 대출이자
-처분비용 = 양도소득세 + 중개수수료
-매도차익 = (매도가 - 매수가) × (1 - 양도세율)
-```
-
-#### 7.1.2 전세 시 총비용 (n년 기준)
-```
-총비용 = 중개수수료 + 전세보증보험료 + (대출이자 × n) + 기회비용 - 세제혜택
-```
-
-**기회비용 계산**:
-```
-기회비용 = 전세보증금 × 기대수익률 × n년
-```
-
-#### 7.1.3 월세 시 총비용 (n년 기준)
-```
-총비용 = 중개수수료 + (월세 × 12 × n) + 기회비용 - 세제혜택
-```
-
-### 7.2 순자산 변화 비교
-
-#### 7.2.1 매수 시 순자산 변화
-```
-순자산변화 = 주택가격변화 - 총비용 - 대출잔액변화
-```
-
-#### 7.2.2 전세/월세 시 순자산 변화
-```
-순자산변화 = 투자수익 - 총주거비용
-투자수익 = (초기자금 - 보증금) × 투자수익률 × n년
-```
-
-### 7.3 손익분기점 계산
-
-매수가 유리해지는 시점을 찾는 공식:
-```
-매수총비용 + 주택가격하락 = 임차총비용 + 기회비용
-```
-
-이를 정리하면:
-```
-손익분기 연간 상승률 = (임차총비용 - 매수보유비용) ÷ 주택가격
-```
-
----
-
-## 8. 주요 변수 및 기본값
-
-### 8.1 경제 지표 (2025년 기준)
-
-| 지표 | 값 | 비고 |
-|-----|-----|-----|
-| 한국은행 기준금리 | 2.5% | 2026년 2월 기준 |
-| 물가상승률 | 2.1% | 2025년 평균 |
-| 주택담보대출 금리 | 3.3~4.7% | 은행별 상이 |
-| 전세대출 금리 | 2.7~4.7% | 은행별 상이 |
-| 법정 전월세전환율 상한 | 5.0% | 기준금리 + 2% |
-
-### 8.2 세율 및 공제 요약
-
-| 항목 | 내용 |
-|-----|-----|
-| 취득세 | 1~12% (주택 수, 가격에 따라) |
-| 재산세 | 0.1~0.4% |
-| 종부세 | 0.5~2.7% (공제 후 과세) |
-| 양도소득세 | 6~45% (1세대1주택 비과세 가능) |
-| 월세 세액공제 | 15~17%, 한도 1,000만 원 |
-| 전세대출 소득공제 | 40%, 한도 400만 원 |
-
----
-
-## 9. 웹 서비스 구현 요구사항
-
-### 9.1 필수 입력 항목
-
-#### 매수 시나리오
-- 주택 매매가격
-- 주택 면적 (㎡)
-- 주택 수 (1, 2, 3주택 이상)
-- 주택담보대출 금액 및 금리
-- 대출 상환 방식 (원리금균등, 원금균등, 만기일시)
-- 예상 거주 기간 (년)
-- 예상 연간 주택가격 변동률 (%)
-- 연 소득 (세제 혜택 계산용)
-
-#### 전세 시나리오
-- 전세보증금
-- 전세대출 금액 및 금리
-- 전세보증보험 가입 여부 및 기관
-- 예상 거주 기간 (년)
-- 기대 투자수익률 (기회비용 계산용)
-
-#### 월세 시나리오
-- 보증금
-- 월세
-- 예상 거주 기간 (년)
-- 기대 투자수익률 (기회비용 계산용)
-
-### 9.2 출력 항목
-
-#### 비용 비교표
-- 초기 비용 총액
-- 연간 비용
-- 총 비용 (거주 기간 전체)
-- 세제 혜택 금액
-- 순비용 (총비용 - 세제혜택)
-
-#### 자산 변화 분석
-- 순자산 변화 (거주 기간 후)
-- 자산 보전율
-- 월평균 실질 주거비용
-
-#### 시각화
-- 연도별 누적 비용 그래프
-- 세 가지 시나리오 비교 차트
-- 손익분기점 분석 (주택 상승률별)
-
-### 9.3 시나리오 분석 기능
-
-#### 민감도 분석
-- 주택가격 변동률별 결과 비교 (-5% ~ +10%)
-- 금리 변동별 결과 비교
-- 거주 기간별 손익분기점
-
-#### 리스크 분석
-- 전세 보증금 미반환 리스크
-- 주택가격 하락 리스크
-- 금리 상승 리스크
-
----
-
-## 10. 계산 예시
-
-### 10.1 기본 시나리오
-
-**조건**:
-- 주택 매매가: 6억 원
-- 전세가: 4.5억 원
-- 월세: 보증금 5,000만 원, 월세 150만 원
-- 거주 기간: 5년
-- 연 소득: 5,000만 원
-- 기대 투자수익률: 4%
-
-### 10.2 매수 시 계산
-
-**초기 비용**:
-- 취득세: 6억 × 1% = 600만 원
-- 지방교육세: 60만 원
-- 중개수수료: 6억 × 0.4% = 240만 원
-- 법무사비용: 50만 원
-- 채권할인비용: 약 200만 원
-- **합계: 약 1,150만 원**
-
-**연간 보유비용** (LTV 60%, 금리 4% 가정):
-- 대출이자: 3.6억 × 4% = 1,440만 원
-- 재산세: 약 80만 원
-- 관리비: 336만 원
-- **합계: 약 1,856만 원/년**
-
-**5년 총비용**: 1,150만 + (1,856만 × 5) = 10,430만 원
-
-**자산 변화** (연 3% 상승 가정):
-- 5년 후 예상 시세: 6억 × 1.03^5 = 약 6.96억 원
-- 시세 상승분: 9,600만 원
-- 순이익: 9,600만 - 10,430만 = -830만 원
-
-### 10.3 전세 시 계산
-
-**비용**:
-- 중개수수료: 4.5억 × 0.3% = 135만 원
-- 전세보증보험: 약 100만 원 (5년)
-- 대출이자 (2억 대출, 3.5%): 2억 × 3.5% × 5 = 3,500만 원
-- 기회비용: 4.5억 × 4% × 5 = 9,000만 원
-
-**5년 총비용**: 135만 + 100만 + 3,500만 + 9,000만 = 12,735만 원
-
-**세제 혜택**:
-- 소득공제: 약 400만 × 5년 × 15% = 300만 원 (세금 환급)
-- **순비용: 12,435만 원**
-
-### 10.4 월세 시 계산
-
-**비용**:
-- 중개수수료: 약 80만 원
-- 월세: 150만 × 12 × 5 = 9,000만 원
-- 기회비용: 5,000만 × 4% × 5 = 1,000만 원
-
-**5년 총비용**: 80만 + 9,000만 + 1,000만 = 10,080만 원
-
-**세제 혜택**:
-- 세액공제: 1,000만 × 15% × 5 = 750만 원
-- **순비용: 9,330만 원**
-
-### 10.5 비교 결론
-
-| 항목 | 매수 | 전세 | 월세 |
-|-----|-----|-----|-----|
-| 5년 총비용 | 10,430만 원 | 12,435만 원 | 9,330만 원 |
-| 자산 변화 | +9,600만 원 | 0 | 0 |
-| 순손익 | -830만 원 | -12,435만 원 | -9,330만 원 |
-
-※ 이 예시에서는 연 3% 주택 상승 시 매수가 가장 유리함
-※ 주택 가격이 하락하면 결과가 역전될 수 있음
-
----
-
-## 11. 참고 자료 및 출처
-
-### 11.1 공식 기관
-- [국세청 홈택스](https://hometax.go.kr) - 양도세, 종부세 계산
-- [서울시 ETAX](https://etax.seoul.go.kr) - 지방세 계산
-- [한국주택금융공사](https://www.hf.go.kr) - 전세대출, 보금자리론
-- [주택도시보증공사 HUG](https://www.khug.or.kr) - 전세보증보험
-- [한국부동산원](https://www.reb.or.kr) - 주택가격동향
-
-### 11.2 계산기 서비스
-- [부동산계산기.com](https://xn--989a00af8jnslv3dba.com/) - 종합 부동산 계산기
-- [부동산계산기 EZB](https://ezb.co.kr/calculator) - 등기비용, 양도세 계산
-- [KB부동산](https://kbland.kr) - 시세 조회, 통계
-
-### 11.3 정책 정보
-- [마이홈포털](https://www.myhome.go.kr) - 주거복지 정책
-- [찾기쉬운 생활법령정보](https://www.easylaw.go.kr) - 부동산 법령
-
----
-
-## 12. 업데이트 이력
-
-| 날짜 | 내용 |
-|-----|-----|
-| 2025-02-28 | 최초 작성 |
-
----
-
-## 13. 향후 고려사항
-
-1. **지역별 세율 차이**: 조정대상지역 여부에 따른 세율 변동
-2. **정책 변화 추적**: 부동산 정책 변화에 따른 계산식 업데이트
-3. **실시간 데이터 연동**: 금리, 주택가격지수 API 연동
-4. **개인화 기능**: 사용자별 세금 상황 맞춤 계산
-5. **다국어 지원**: 외국인 투자자를 위한 영문 버전
-
-
----
-
-# S3 정적 웹사이트 HTTPS + 커스텀 도메인 설정 가이드
-
-## 개요
-
-S3 버킷(`onady.kro.kr`)에 호스팅된 정적 웹사이트를 HTTPS와 커스텀 도메인(`www.dngg.shop`)으로 접속 가능하도록 설정한 작업 내역입니다.
-
-## 아키텍처
-
-```
-사용자 → Route 53 (www.dngg.shop) → CloudFront (HTTPS) → S3 (onady.kro.kr)
-```
-
-### 도메인 구조
-- `dngg.shop` → ELB/EC2 (기존 서비스 유지)
-- `www.dngg.shop` → CloudFront → S3 정적 웹사이트 (신규 추가)
-
-## 사전 요구사항
-
-- AWS 계정 및 CLI 설정
-- S3 버킷에 정적 웹사이트 호스팅 활성화
-- Route 53에 도메인 호스팅 영역 등록
-
-## 작업 단계
-
-### 1. ACM SSL 인증서 발급
-
-**중요**: CloudFront에서 사용할 인증서는 반드시 **us-east-1 (버지니아)** 리전에서 발급해야 합니다.
-
-```bash
-aws acm request-certificate \
-  --domain-name www.dngg.shop \
-  --validation-method DNS \
-  --region us-east-1
-```
-
-**결과:**
+### 1.2 핵심 의존성
 ```json
 {
-  "CertificateArn": "arn:aws:acm:us-east-1:691967102238:certificate/510b3b57-56d9-465d-ae7e-b3505f50a4f7"
+  "상태관리": "zustand@5.0.11 (persist, devtools)",
+  "폼관리": "react-hook-form@7.71.2 + @hookform/resolvers@5.2.2",
+  "검증": "zod@4.3.6",
+  "차트": "recharts@3.7.0",
+  "애니메이션": "framer-motion@12.34.3",
+  "스타일": "tailwindcss@3.4.1"
 }
 ```
 
-### 2. DNS 검증 레코드 확인
+### 1.3 프로젝트 목적
+매수/전세/월세 3가지 주거 시나리오를 비교하여 사용자에게 최적의 선택을 추천하는 금융 계산기 웹 애플리케이션.
 
-```bash
-aws acm describe-certificate \
-  --certificate-arn arn:aws:acm:us-east-1:691967102238:certificate/510b3b57-56d9-465d-ae7e-b3505f50a4f7 \
-  --region us-east-1
+- 인플레이션 시나리오별 비교 (저/중/고)
+- 순자산 변화 시뮬레이션
+- 레버리지 효과 분석
+- 세제 혜택 자동 계산
+- 모바일 최적화 UI
+
+---
+
+## 2. 아키텍처 구조
+
+### 2.1 디렉토리 구조
+```
+app/
+├── src/
+│   ├── app/                    # Next.js App Router
+│   │   ├── layout.tsx          # 루트 레이아웃 (폰트, 메타데이터)
+│   │   ├── page.tsx            # 홈 → /calculator 리다이렉트
+│   │   ├── calculator/
+│   │   │   └── page.tsx        # 메인 계산기 페이지
+│   │   ├── globals.css         # 전역 스타일 (Tailwind + 커스텀)
+│   │   └── fonts/              # Geist 폰트
+│   │
+│   ├── components/             # React 컴포넌트
+│   │   ├── layout/             # 레이아웃 컴포넌트
+│   │   │   └── TopBar.tsx      # 상단 바
+│   │   ├── inputs/             # 입력 컴포넌트
+│   │   │   ├── PriceStepCard.tsx           # 가격 입력 카드
+│   │   │   ├── PeriodStepCard.tsx          # 기간 선택
+│   │   │   ├── NumberPadInput.tsx          # 숫자 입력 바텀시트
+│   │   │   ├── InflationScenarioSelector.tsx # 인플레이션 시나리오 선택
+│   │   │   ├── AdvancedSheet.tsx           # 고급 설정 바텀시트
+│   │   │   ├── SliderWithLabel.tsx         # 슬라이더 컴포넌트
+│   │   │   └── PresetButtons.tsx           # 프리셋 버튼
+│   │   ├── results/            # 결과 표시 컴포넌트
+│   │   │   ├── AutoRecommendation.tsx      # AI 추천 결과
+│   │   │   ├── WinnerBanner.tsx            # 최적 선택 배너
+│   │   │   ├── LeverageSimulator.tsx       # 레버리지 시뮬레이터
+│   │   │   ├── ScenarioSwipeCards.tsx      # 시나리오 스와이프 카드
+│   │   │   └── CostDetailSheet.tsx         # 비용 상세 바텀시트
+│   │   └── charts/             # 차트 컴포넌트
+│   │       ├── AssetProjectionChart.tsx    # 순자산 변화 차트
+│   │       ├── ScenarioComparisonChart.tsx # 시나리오 비교 차트
+│   │       ├── YearlyCostChart.tsx         # 연도별 비용 차트
+│   │       ├── BreakevenChart.tsx          # 손익분기점 차트
+│   │       └── ScenarioBarChart.tsx        # 시나리오 바 차트
+│   │
+│   ├── lib/                    # 비즈니스 로직
+│   │   ├── store/              # Zustand 상태 관리
+│   │   │   └── calculatorStore.ts  # 메인 스토어
+│   │   ├── calculations/       # 계산 로직
+│   │   │   ├── index.ts            # 통합 계산 함수
+│   │   │   ├── buy.ts              # 매수 시나리오
+│   │   │   ├── jeonse.ts           # 전세 시나리오
+│   │   │   ├── monthlyRent.ts      # 월세 시나리오
+│   │   │   ├── taxes.ts            # 세금 계산
+│   │   │   ├── loanRepayment.ts    # 대출 상환 계산
+│   │   │   ├── agentFees.ts        # 중개수수료 계산
+│   │   │   ├── breakeven.ts        # 손익분기점 분석
+│   │   │   ├── inflation.ts        # 인플레이션 시나리오
+│   │   │   └── recommendation.ts   # 추천 로직
+│   │   ├── constants/          # 상수 정의
+│   │   │   ├── defaults.ts         # 기본값
+│   │   │   └── taxRates.ts         # 세율 브라켓
+│   │   ├── schemas/            # Zod 스키마
+│   │   │   ├── buySchema.ts
+│   │   │   ├── jeonseSchema.ts
+│   │   │   └── monthlyRentSchema.ts
+│   │   └── utils/              # 유틸리티
+│   │       └── format.ts           # 포맷팅 함수
+│   │
+│   └── types/                  # TypeScript 타입 정의
+│       └── index.ts            # 모든 타입 정의
+│
+├── public/                     # 정적 파일
+│   └── manifest.json           # PWA 매니페스트
+├── .next/                      # Next.js 빌드 출력
+├── next.config.mjs             # Next.js 설정
+├── tsconfig.json               # TypeScript 설정
+├── tailwind.config.ts          # Tailwind 설정
+└── package.json                # 의존성 관리
 ```
 
-**검증 정보 추출:**
-- Name: `_be49b3b921b82f12b57faceef668429a.www.dngg.shop.`
-- Type: `CNAME`
-- Value: `_910e6ce1bef95dbd706cea2193a4049a.jkddzztszm.acm-validations.aws.`
+### 2.2 데이터 흐름
 
-### 3. Route 53에 검증 레코드 추가
-
-```bash
-aws route53 change-resource-record-sets \
-  --hosted-zone-id Z06304353IPUEWD95IVFZ \
-  --change-batch '{
-    "Changes": [{
-      "Action": "CREATE",
-      "ResourceRecordSet": {
-        "Name": "_be49b3b921b82f12b57faceef668429a.www.dngg.shop.",
-        "Type": "CNAME",
-        "TTL": 300,
-        "ResourceRecords": [{
-          "Value": "_910e6ce1bef95dbd706cea2193a4049a.jkddzztszm.acm-validations.aws."
-        }]
-      }
-    }]
-  }' \
-  --region ap-northeast-2
+```
+사용자 입력 (UI)
+    ↓
+NumberPadInput / SliderWithLabel
+    ↓
+calculatorStore (Zustand)
+    ↓ updateBuyInputs / updateJeonseInputs / updateMonthlyRentInputs
+    ↓ calculate() 자동 호출
+    ↓
+runAllCalculations()
+    ├─→ calculateBuyScenario()
+    │   ├─→ calculateAcquisitionTax()
+    │   ├─→ calculatePropertyTax()
+    │   ├─→ calculateCapitalGainsTax()
+    │   └─→ calculateLoanRepayment()
+    ├─→ calculateJeonseScenario()
+    └─→ calculateMonthlyRentScenario()
+    ↓
+generateYearlyCostSeries()
+generateBreakevenSeries()
+generateAssetProjectionSeries()
+    ↓
+compareInflationScenarios()
+generateRecommendation()
+    ↓
+results / scenarioComparisons / recommendation
+    ↓
+UI 컴포넌트 렌더링
+    ├─→ AutoRecommendation
+    ├─→ ScenarioComparisonChart
+    ├─→ AssetProjectionChart
+    ├─→ LeverageSimulator
+    └─→ WinnerBanner
 ```
 
-**인증서 발급 대기:** 약 5-10분 소요
+---
 
-### 4. CloudFront 배포 생성
+## 3. 핵심 기능 상세 분석
 
-#### 4.1 배포 설정 파일 생성
+### 3.1 상태 관리 (calculatorStore.ts)
 
-`cloudfront-config.json`:
-```json
-{
-  "CallerReference": "www-dngg-shop-2026-03-04",
-  "Aliases": {
-    "Quantity": 1,
-    "Items": ["www.dngg.shop"]
-  },
-  "DefaultRootObject": "index.html",
-  "Origins": {
-    "Quantity": 1,
-    "Items": [{
-      "Id": "S3-onady-kro-kr",
-      "DomainName": "onady.kro.kr.s3-website.ap-northeast-2.amazonaws.com",
-      "CustomOriginConfig": {
-        "HTTPPort": 80,
-        "HTTPSPort": 443,
-        "OriginProtocolPolicy": "http-only"
-      }
-    }]
-  },
-  "DefaultCacheBehavior": {
-    "TargetOriginId": "S3-onady-kro-kr",
-    "ViewerProtocolPolicy": "redirect-to-https",
-    "AllowedMethods": {
-      "Quantity": 2,
-      "Items": ["GET", "HEAD"],
-      "CachedMethods": {
-        "Quantity": 2,
-        "Items": ["GET", "HEAD"]
-      }
-    },
-    "ForwardedValues": {
-      "QueryString": false,
-      "Cookies": {
-        "Forward": "none"
-      }
-    },
-    "MinTTL": 0,
-    "DefaultTTL": 86400,
-    "MaxTTL": 31536000,
-    "Compress": true,
-    "TrustedSigners": {
-      "Enabled": false,
-      "Quantity": 0
-    }
-  },
-  "Comment": "CloudFront for www.dngg.shop -> S3 static website",
-  "Enabled": true,
-  "ViewerCertificate": {
-    "ACMCertificateArn": "arn:aws:acm:us-east-1:691967102238:certificate/510b3b57-56d9-465d-ae7e-b3505f50a4f7",
-    "SSLSupportMethod": "sni-only",
-    "MinimumProtocolVersion": "TLSv1.2_2021"
-  }
+**Zustand 스토어 구조**:
+```typescript
+interface CalculatorState {
+  // 입력 상태
+  buyInputs: BuyInputs;
+  jeonseInputs: JeonseInputs;
+  monthlyRentInputs: MonthlyRentInputs;
+  
+  // 계산 결과
+  results: CalculationResults | null;
+  scenarioComparisons: ScenarioComparison[] | null;
+  recommendation: Recommendation | null;
+  
+  // UI 상태
+  activeTab: ScenarioKey;
+  inflationScenario: InflationScenario;
+  
+  // 액션
+  updateBuyInputs: (partial: Partial<BuyInputs>) => void;
+  updateJeonseInputs: (partial: Partial<JeonseInputs>) => void;
+  updateMonthlyRentInputs: (partial: Partial<MonthlyRentInputs>) => void;
+  setInflationScenario: (scenario: InflationScenario) => void;
+  calculate: () => void;
+  resetAll: () => void;
+  setActiveTab: (tab: ScenarioKey) => void;
 }
 ```
 
-#### 4.2 배포 생성
+**핵심 특징**:
+1. **자동 재계산**: 모든 입력 업데이트 시 `calculate()` 자동 호출
+2. **LocalStorage 영속화**: `persist` 미들웨어로 입력값 저장
+3. **DevTools 통합**: Redux DevTools로 디버깅 가능
+4. **Hydration 후 계산**: `onRehydrateStorage`에서 초기 계산 실행
 
-```bash
-aws cloudfront create-distribution \
-  --distribution-config file://cloudfront-config.json \
-  --region us-east-1
-```
-
-**결과:**
-```json
-{
-  "Distribution": {
-    "Id": "E3O4Y7T1KMPYMR",
-    "DomainName": "d3tz9d0utldxlf.cloudfront.net",
-    "Status": "InProgress"
-  }
+**계산 로직**:
+```typescript
+calculate: () => {
+  const { buyInputs, jeonseInputs, monthlyRentInputs, inflationScenario } = get();
+  
+  // 1. 인플레이션 파라미터 적용
+  const params = getInflationParameters(inflationScenario);
+  const adjustedBuy = { ...buyInputs, annualPriceChangeRate: params.housingPriceGrowth, ... };
+  
+  // 2. 3가지 시나리오 계산
+  const results = runAllCalculations(adjustedBuy, adjustedJeonse, adjustedRent);
+  
+  // 3. 인플레이션 시나리오별 비교
+  const scenarioComparisons = compareInflationScenarios(...);
+  
+  // 4. 추천 생성
+  const recommendation = generateRecommendation(inflationScenario, results, adjustedBuy);
+  
+  set({ results, scenarioComparisons, recommendation });
 }
 ```
 
-**배포 완료 대기:** 약 10-15분 소요
 
-### 5. Route 53에 www.dngg.shop A 레코드 추가
+### 3.2 계산 엔진 (lib/calculations/)
 
-```bash
-aws route53 change-resource-record-sets \
-  --hosted-zone-id Z06304353IPUEWD95IVFZ \
-  --change-batch '{
-    "Changes": [{
-      "Action": "CREATE",
-      "ResourceRecordSet": {
-        "Name": "www.dngg.shop.",
-        "Type": "A",
-        "AliasTarget": {
-          "HostedZoneId": "Z2FDTNDATAQYW2",
-          "DNSName": "d3tz9d0utldxlf.cloudfront.net.",
-          "EvaluateTargetHealth": false
-        }
-      }
-    }]
-  }' \
-  --region ap-northeast-2
+#### 3.2.1 매수 시나리오 (buy.ts)
+
+**계산 단계**:
+
+1. **초기 비용 (Initial Costs)**
+   - 취득세: `calculateAcquisitionTax()` - 6~9억 구간 점진 공식 적용
+   - 중개수수료: `calculateBuyAgentFee()` - 브라켓 기반
+   - 법무사 비용: 가격대별 추정 (30만~80만원)
+   - 채권할인비용: 매매가 × 0.4%
+   - 등록세 + 인지세: 매매가 × 0.2% + 인지세
+
+2. **연간 보유비용 (Annual Holding Costs)**
+   - 재산세: 공시가격(시세×70%) × 공정시장가액비율(60%) 기준
+   - 종합부동산세: 1세대 1주택 12억 공제, 일반 9억 공제
+   - 관리비: 면적(㎡) × 2,920원 × 12개월
+   - 대출이자: `calculateLoanRepayment()` 결과
+
+3. **처분 비용 (Disposal Costs)**
+   - 양도소득세: 1세대 1주택 비과세 조건 체크
+     - 2년 보유 + 2년 거주 + 12억 이하 → 비과세
+     - 장기보유특별공제: 실거주 연 4% (최대 80%)
+   - 중개수수료: 매도가 기준
+
+4. **기회비용 (Opportunity Cost)**
+   - 자기자본(매수가 - 대출) × 기대투자수익률 × 보유기간
+
+5. **자산 이익 (Asset Gain)**
+   - 시세 상승분: `매수가 × (1 + 연간변동률)^보유년수 - 매수가`
+   - 실질 주거비: `총비용 - 시세상승분`
+
+**핵심 코드**:
+```typescript
+export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
+  const { purchasePrice, loanAmount, yearsToHold, annualPriceChangeRate, ... } = inputs;
+  
+  // 초기 비용
+  const acqTax = calculateAcquisitionTax(purchasePrice, numHomes, areaM2, isFirstHomeBuyer);
+  const initialTotal = acqTax.total + buyAgentFee + legalFee + bondDiscount + ...;
+  
+  // 연간 보유비용
+  const propertyTax = calculatePropertyTax(purchasePrice);
+  const loanSchedule = calculateLoanRepayment(loanAmount, loanRate, loanType, 30, yearsToHold);
+  const annualHoldingTotal = propertyTax + comprehensiveTax + maintenanceFee + annualLoanInterest;
+  
+  // 처분 비용
+  const salePrice = Math.floor(purchasePrice * Math.pow(1 + annualPriceChangeRate, yearsToHold));
+  const capitalGainsTax = calculateCapitalGainsTax({ purchasePrice, salePrice, ... });
+  
+  // 기회비용
+  const buyEquity = purchasePrice - loanAmount;
+  const opportunityCost = Math.floor(buyEquity * expectedInvestmentReturn * yearsToHold);
+  
+  // 자산 이익
+  const priceGain = salePrice - purchasePrice;
+  const effectiveCost = netTotal - priceGain;
+  
+  return { initialCosts, annualHoldingCosts, disposalCosts, opportunityCost, assetGain, ... };
+}
 ```
 
-**참고:** `Z2FDTNDATAQYW2`는 CloudFront의 고정 Hosted Zone ID입니다.
+#### 3.2.2 전세 시나리오 (jeonse.ts)
 
-### 6. 검증 및 테스트
+**계산 단계**:
 
-#### CloudFront 배포 상태 확인
-```bash
-aws cloudfront get-distribution \
-  --id E3O4Y7T1KMPYMR \
-  --region us-east-1 \
-  --query 'Distribution.Status'
+1. **초기 비용**
+   - 중개수수료: `calculateRentAgentFee()` - 임대차 브라켓
+   - 전세보증보험료: 보증금 × 보험료율 × 보유년수
+     - HF: 0.04~0.18%
+     - HUG: 0.11~0.21%
+     - SGI: 0.18~0.21%
+
+2. **주기적 비용**
+   - 전세대출 이자: 만기일시상환 가정 (이자만 납부)
+   - 기회비용: 보증금 자부담 × 기대투자수익률 × 보유년수
+
+3. **세제 혜택**
+   - 전세대출 이자 소득공제: 최대 400만원, 공제율 40%
+   - 한계세율 적용: 5,500만원 이하 15%, 초과 24%
+
+**핵심 코드**:
+```typescript
+export function calculateJeonseScenario(inputs: JeonseInputs): JeonseCostBreakdown {
+  const { depositAmount, loanAmount, loanRate, insuranceProvider, yearsToHold, ... } = inputs;
+  
+  // 초기 비용
+  const agentFee = calculateRentAgentFee(depositAmount);
+  const insurancePremium = calcInsurancePremium(depositAmount, insuranceProvider, yearsToHold);
+  
+  // 주기적 비용
+  const annualInterest = Math.floor(loanAmount * loanRate);
+  const totalLoanInterest = annualInterest * yearsToHold;
+  const opportunityCost = Math.floor(depositAmount * expectedInvestmentReturn * yearsToHold);
+  
+  // 세제 혜택
+  const annualTaxBenefit = calcJeonseLoanDeduction(annualIncome, annualInterest);
+  const totalTaxBenefit = annualTaxBenefit * yearsToHold;
+  
+  return {
+    initialCosts: { agentFee, insurancePremium, total: initialTotal },
+    periodicCosts: { loanInterest: totalLoanInterest, opportunityCost, total: periodicTotal },
+    taxBenefits: { loanDeduction: totalTaxBenefit, total: totalTaxBenefit },
+    grandTotal: initialTotal + periodicTotal,
+    netTotal: initialTotal + periodicTotal - totalTaxBenefit,
+  };
+}
 ```
 
-#### CloudFront 도메인 직접 테스트
-```bash
-curl -I https://d3tz9d0utldxlf.cloudfront.net
+#### 3.2.3 월세 시나리오 (monthlyRent.ts)
+
+**계산 단계**:
+
+1. **초기 비용**
+   - 중개수수료: 거래금액 기준
+     - 거래금액 = 보증금 + (월세 × 100)
+     - 5천만원 미만 시: 보증금 + (월세 × 70)
+
+2. **주기적 비용**
+   - 총 월세 납부액: 월세 × 12 × 보유년수
+   - 기회비용: 보증금 × 기대투자수익률 × 보유년수
+
+3. **세제 혜택**
+   - 월세 세액공제: 최대 1,000만원
+   - 공제율: 5,500만원 이하 17%, 초과 15%
+   - 조건: 면적 85㎡ 이하 또는 시가 4억 이하, 소득 8,000만원 이하
+
+**핵심 코드**:
+```typescript
+export function calculateMonthlyRentScenario(inputs: MonthlyRentInputs): MonthlyRentCostBreakdown {
+  const { depositAmount, monthlyRent, yearsToHold, ... } = inputs;
+  
+  // 초기 비용
+  const txAmount = calculateMonthlyRentTransactionAmount(depositAmount, monthlyRent);
+  const agentFee = calculateRentAgentFee(txAmount);
+  
+  // 주기적 비용
+  const totalRentPaid = monthlyRent * 12 * yearsToHold;
+  const opportunityCost = Math.floor(depositAmount * expectedInvestmentReturn * yearsToHold);
+  
+  // 세제 혜택
+  const annualTaxCredit = calcRentTaxCredit(annualIncome, monthlyRent * 12, areaM2, marketPrice);
+  const totalTaxBenefit = annualTaxCredit * yearsToHold;
+  
+  return {
+    initialCosts: { agentFee, total: agentFee },
+    periodicCosts: { totalRentPaid, opportunityCost, total: periodicTotal },
+    taxBenefits: { rentTaxCredit: totalTaxBenefit, total: totalTaxBenefit },
+    grandTotal: agentFee + periodicTotal,
+    netTotal: agentFee + periodicTotal - totalTaxBenefit,
+  };
+}
 ```
 
-#### 커스텀 도메인 테스트
-```bash
-curl -I https://www.dngg.shop
-```
+#### 3.2.4 대출 상환 계산 (loanRepayment.ts)
 
-#### DNS 전파 확인
-```bash
-dig www.dngg.shop
-# 또는
-dig @8.8.8.8 www.dngg.shop
-```
+**3가지 상환 방식**:
 
-## 최종 리소스 정보
-
-### ACM 인증서
-- ARN: `arn:aws:acm:us-east-1:691967102238:certificate/510b3b57-56d9-465d-ae7e-b3505f50a4f7`
-- 도메인: `www.dngg.shop`
-- 리전: `us-east-1`
-- 검증 방법: DNS
-- 상태: ISSUED
-
-### CloudFront 배포
-- Distribution ID: `E3O4Y7T1KMPYMR`
-- 도메인: `d3tz9d0utldxlf.cloudfront.net`
-- Alternate Domain: `www.dngg.shop`
-- Origin: `onady.kro.kr.s3-website.ap-northeast-2.amazonaws.com`
-- SSL 인증서: ACM (us-east-1)
-- Viewer Protocol: Redirect HTTP to HTTPS
-- 캐싱: 기본 86400초 (24시간)
-
-### Route 53 레코드
-- 호스팅 영역 ID: `Z06304353IPUEWD95IVFZ`
-- 도메인: `dngg.shop`
-
-**레코드 목록:**
-1. `dngg.shop` (A) → ELB (기존)
-2. `www.dngg.shop` (A) → CloudFront (신규)
-3. `_be49b3b921b82f12b57faceef668429a.www.dngg.shop` (CNAME) → ACM 검증
-
-## 비용 분석
-
-### 무료 항목
-- **ACM 인증서**: 완전 무료
-- **Route 53 호스팅 영역**: 기존 사용 중 ($0.50/월)
-
-### CloudFront 프리티어 (12개월)
-- 데이터 전송: 월 1TB 무료
-- HTTP/HTTPS 요청: 월 10,000,000건 무료
-
-### 프리티어 이후 비용 (한국 기준)
-- 데이터 전송: ~$0.085/GB
-- HTTP/HTTPS 요청: $0.0075/10,000건
-- Origin 요청: $0.0075/10,000건
-
-**예상 월 비용 (트래픽 적은 개인 사이트):** 거의 무료 ~ $1 미만
-
-## 비용 최적화 팁
-
-1. **캐싱 최대화**
-   - TTL 길게 설정 (정적 파일: 24시간 이상)
-   - Origin 요청 최소화
-
-2. **불필요한 기능 비활성화**
-   - CloudFront 로깅 비활성화 (S3 저장 비용 절감)
-   - WAF 사용 안 함
-
-3. **압축 활성화**
-   - `Compress: true` 설정으로 전송량 감소
-
-## 트러블슈팅
-
-### 1. DNS가 전파되지 않음
-**증상:** `curl: (6) Could not resolve host: www.dngg.shop`
-
-**해결:**
-- DNS 전파는 1-5분 소요 (최대 48시간)
-- Google DNS로 확인: `dig @8.8.8.8 www.dngg.shop`
-- CloudFront 도메인으로 직접 테스트
-
-### 2. CloudFront 403 Forbidden
-**원인:** S3 버킷 권한 또는 Origin 설정 오류
-
-**해결:**
-- S3 버킷 정책 확인
-- S3 웹사이트 엔드포인트 사용 (`.s3-website.` 형식)
-- CloudFront Origin 설정에서 CustomOriginConfig 사용
-
-### 3. SSL 인증서 오류
-**원인:** 인증서가 us-east-1이 아닌 다른 리전에서 발급됨
-
-**해결:**
-- 반드시 us-east-1에서 인증서 발급
-- CloudFront는 us-east-1 인증서만 지원
-
-## 참고 자료
-
-- [AWS CloudFront 문서](https://docs.aws.amazon.com/cloudfront/)
-- [AWS ACM 문서](https://docs.aws.amazon.com/acm/)
-- [S3 정적 웹사이트 호스팅](https://docs.aws.amazon.com/AmazonS3/latest/userguide/WebsiteHosting.html)
-
-## 작업 일시
-
-- 작업일: 2026-03-04
-- 소요 시간: 약 30분 (리소스 생성 대기 시간 포함)
-- 작업자: AWS CLI 자동화
-
-## 다음 단계 (선택사항)
-
-1. **CloudFront 캐시 무효화**
-   ```bash
-   aws cloudfront create-invalidation \
-     --distribution-id E3O4Y7T1KMPYMR \
-     --paths "/*"
+1. **원리금균등상환 (Equal Payment)**
+   ```typescript
+   월 상환액 = P × [r(1+r)^n] / [(1+r)^n - 1]
    ```
+   - 매월 동일한 금액 납부
+   - 초기 이자 비중 높음 → 후기 원금 비중 높음
 
-2. **S3 버킷 정책 최적화**
-   - CloudFront에서만 접근 가능하도록 제한
+2. **원금균등상환 (Equal Principal)**
+   ```typescript
+   월 원금 = P / 총개월수
+   월 이자 = 잔여원금 × 월이자율
+   ```
+   - 매월 원금 고정, 이자는 감소
+   - 초기 납부액이 가장 큼
 
-3. **모니터링 설정**
-   - CloudWatch 알람 설정
-   - CloudFront 액세스 로그 활성화 (필요시)
+3. **만기일시상환 (Bullet)**
+   ```typescript
+   월 이자 = P × 연이자율 / 12
+   ```
+   - 이자만 납부, 만기에 원금 일시 상환
+   - 전세대출에 주로 사용
 
-4. **추가 도메인 설정**
-   - `dngg.shop` → `www.dngg.shop` 리다이렉트 설정
-
-
----
-
-# 인플레이션이 매수/전세/월세에 미치는 영향 분석
-
-## 1. 인플레이션 개요
-
-### 1.1 인플레이션의 정의
-인플레이션(Inflation)은 화폐 가치가 하락하고 물가가 지속적으로 상승하는 경제 현상입니다. 같은 금액으로 구매할 수 있는 재화와 서비스의 양이 시간이 지남에 따라 감소합니다.
-
-### 1.2 한국의 인플레이션 추이
-
-| 연도 | 소비자물가상승률 | 주요 특징 |
-|-----|----------------|----------|
-| 2019 | 0.4% | 저물가 기조 |
-| 2020 | 0.5% | 코로나19 영향 |
-| 2021 | 2.5% | 경기 회복 |
-| 2022 | 5.1% | 고물가 시대 진입 |
-| 2023 | 3.6% | 물가 안정화 시도 |
-| 2024 | 2.3% | 안정화 국면 |
-| 2025 | 2.1% | 목표 수준 근접 |
-
-**한국은행 물가안정목표**: 2%
-
-### 1.3 인플레이션의 주요 구성 요소
-
-#### 1.3.1 소비자물가지수 (CPI) 구성
-- **주거비**: 14.3% (전월세, 주택 유지비)
-- **식료품**: 13.8%
-- **교통**: 12.1%
-- **음식·숙박**: 11.9%
-- **교육**: 9.8%
-- **기타**: 38.1%
-
-#### 1.3.2 주거비 세부 구성
-- 실제주거비 (자가): 4.2%
-- 임차료 (전월세): 7.8%
-- 주택유지 및 수선: 2.3%
-
-### 1.4 인플레이션이 자산에 미치는 영향
-
-#### 1.4.1 실질가치 vs 명목가치
-```
-실질가치 = 명목가치 ÷ (1 + 인플레이션율)^기간
+**반환값**:
+```typescript
+interface LoanRepaymentResult {
+  totalInterestPaid: number;           // 총 이자 납부액
+  yearlyInterestSchedule: number[];    // 연도별 이자 스케줄
+  remainingPrincipal: number;          // 잔여 원금
+  monthlyPayment: number;              // 월 실납부액 (순자산 비교 기준)
+}
 ```
 
-**예시**: 1억 원의 10년 후 실질가치 (연 2% 인플레이션)
-```
-실질가치 = 1억 ÷ 1.02^10 = 약 8,203만 원
-구매력 손실 = 1,797만 원 (17.97%)
-```
+#### 3.2.5 세금 계산 (taxes.ts)
 
-#### 1.4.2 자산별 인플레이션 헤지 능력
+**1. 취득세 (Acquisition Tax)**
 
-| 자산 유형 | 인플레이션 헤지 능력 | 특징 |
-|---------|-------------------|------|
-| 현금 | ★☆☆☆☆ | 구매력 지속 하락 |
-| 예금 | ★★☆☆☆ | 금리가 인플레이션보다 낮으면 실질 손실 |
-| 채권 | ★★☆☆☆ | 고정금리 채권은 인플레이션에 취약 |
-| 주식 | ★★★☆☆ | 기업 가격 전가 능력에 따라 상이 |
-| 부동산 | ★★★★☆ | 역사적으로 강한 헤지 능력 |
-| 금 | ★★★★☆ | 전통적 인플레이션 헤지 자산 |
+```typescript
+// 6억~9억 1주택 점진 공식
+세율 = (취득가액(억원) × 2 - 3) / 100
 
-
-## 2. 인플레이션이 매수에 미치는 영향
-
-### 2.1 긍정적 영향 (매수 유리)
-
-#### 2.1.1 부동산 가격 상승
-**메커니즘**:
-- 건축 자재비 상승 → 신규 공급 가격 상승
-- 인건비 상승 → 건설 비용 증가
-- 토지 가격 상승 → 기존 주택 가치 상승
-
-**역사적 데이터** (한국, 1986-2025):
-```
-연평균 주택가격 상승률: 4.2%
-연평균 소비자물가 상승률: 3.1%
-실질 주택가격 상승률: 1.1%
+// 예: 7억원 → (7 × 2 - 3) / 100 = 11 / 100 = 1.1%
 ```
 
-**시기별 분석**:
+- 기본세 + 지방교육세(10%) + 농어촌특별세(10%, 85㎡ 초과)
+- 생애최초 구입 감면: 12억 이하, 최대 200만원
 
-| 기간 | 주택가격 상승률 | 물가상승률 | 실질 상승률 |
-|-----|---------------|-----------|-----------|
-| 1986-1990 | 12.3% | 6.8% | 5.5% |
-| 1991-1995 | 8.7% | 6.2% | 2.5% |
-| 1996-2000 | -2.1% | 3.9% | -6.0% |
-| 2001-2005 | 5.4% | 3.2% | 2.2% |
-| 2006-2010 | 3.2% | 3.4% | -0.2% |
-| 2011-2015 | 1.8% | 1.9% | -0.1% |
-| 2016-2020 | 6.9% | 1.2% | 5.7% |
-| 2021-2025 | 2.1% | 3.5% | -1.4% |
+**2. 재산세 (Property Tax)**
 
-**결론**: 장기적으로 주택가격은 물가상승률을 상회하는 경향
-
-#### 2.1.2 대출 실질부담 감소
-**명목부채 vs 실질부채**:
-
-인플레이션 발생 시 명목 대출금액은 고정되지만, 화폐 가치 하락으로 실질 부채 부담이 감소합니다.
-
-**계산 예시**:
-- 대출금: 3억 원 (고정금리 3%)
-- 인플레이션: 연 4%
-- 실질금리: 3% - 4% = -1% (음의 실질금리)
-
-**10년 후 실질 부채가치**:
-```
-명목 대출잔액: 3억 원 (원금균등 가정 시 약 1.5억)
-실질 부채가치: 1.5억 ÷ 1.04^10 = 약 1.01억 원
-실질 부담 감소: 4,900만 원 (32.7%)
+```typescript
+공시가격 = 매매가 × 70% (근사치)
+과세표준 = 공시가격 × 공정시장가액비율(60%)
 ```
 
-#### 2.1.3 임대수익 증가
-**전월세 상승**:
-- 인플레이션 → 임대료 상승 압력
-- 전세가율 상승 (전세 → 월세 전환 가속)
-- 월세 수익의 명목가치 증가
+브라켓:
+- 6천만원 이하: 0.1%
+- 6천만~1.5억: 0.15%
+- 1.5억~3억: 0.25%
+- 3억 초과: 0.4%
 
-**역사적 데이터**:
-```
-2015-2020: 전월세 연평균 상승률 2.1%
-2021-2025: 전월세 연평균 상승률 4.8%
-```
+**3. 종합부동산세 (Comprehensive Real Estate Tax)**
 
-#### 2.1.4 세금 부담의 실질 감소
-**고정 세금의 실질가치 하락**:
-- 재산세는 공시가격 기준 (시세 상승보다 느림)
-- 취득세는 취득 시점 1회성
-- 인플레이션으로 세금의 실질 부담 감소
+- 기본공제: 1세대 1주택 12억, 일반 9억
+- 과세표준 = (공시가격 - 기본공제) × 60%
+- 7단계 누진세율: 0.5%~2.7%
 
-### 2.2 부정적 영향 (매수 불리)
+**4. 양도소득세 (Capital Gains Tax)**
 
-#### 2.2.1 대출금리 상승
-**인플레이션 → 기준금리 인상 → 대출금리 상승**
+비과세 조건:
+- 1세대 1주택
+- 2년 보유 + 2년 거주
+- 양도가 12억 이하
 
-**한국은행 기준금리 변화**:
-| 시기 | 기준금리 | 주택담보대출 금리 | 배경 |
-|-----|---------|----------------|------|
-| 2020.05 | 0.50% | 2.5~3.0% | 코로나19 대응 |
-| 2021.08 | 0.75% | 2.7~3.3% | 인상 시작 |
-| 2022.01 | 1.25% | 3.5~4.2% | 물가 대응 |
-| 2023.01 | 3.50% | 4.5~5.5% | 긴축 정점 |
-| 2024.10 | 3.25% | 3.8~4.8% | 인하 시작 |
-| 2025.02 | 2.50% | 3.3~4.7% | 완화 기조 |
+장기보유특별공제:
+- 실거주: 연 4% (최대 80%)
+- 일반: 연 2% (최대 30%)
 
-**대출이자 부담 증가 예시**:
-- 대출금: 3억 원
-- 금리 상승: 3% → 5%
-- 연간 이자 증가: 900만 → 1,500만 원 (+600만 원)
+8단계 누진세율: 6%~45%
 
-#### 2.2.2 초기 진입비용 상승
-**인플레이션 시기의 주택가격 급등**:
-- 2020년 서울 아파트 평균: 9.3억 원
-- 2021년 서울 아파트 평균: 11.8억 원 (+26.9%)
-- 2022년 서울 아파트 평균: 12.1억 원 (+2.5%)
+#### 3.2.6 손익분기점 분석 (breakeven.ts)
 
-**취득세 등 초기비용 증가**:
-```
-주택가격 10억 → 12억 상승 시
-취득세: 1,000만 → 1,200만 (+200만)
-중개수수료: 400만 → 480만 (+80만)
-등기비용: 약 50만 → 60만 (+10만)
+**1. 연도별 누적 비용 시계열**
+
+```typescript
+export function generateYearlyCostSeries(
+  buyInputs, jeonseInputs, monthlyRentInputs, maxYears
+): YearlyCostDataPoint[] {
+  return Array.from({ length: maxYears }, (_, i) => {
+    const year = i + 1;
+    return {
+      year,
+      buyCumulative: calculateBuyScenario({ ...buyInputs, yearsToHold: year }).effectiveCost,
+      jeonseCumulative: calculateJeonseScenario({ ...jeonseInputs, yearsToHold: year }).netTotal,
+      monthlyRentCumulative: calculateMonthlyRentScenario({ ...monthlyRentInputs, yearsToHold: year }).netTotal,
+    };
+  });
+}
 ```
 
-#### 2.2.3 유지비용 상승
-**관리비 인상**:
-- 인건비 상승 (경비, 미화, 관리직)
-- 에너지 비용 상승 (전기, 가스, 난방)
-- 수선유지비 증가
+- 각 연도마다 독립적으로 재계산 (정확성 보장)
+- 실질 주거비 기준 (자산 이익 반영)
 
-**실제 데이터** (서울 84㎡ 아파트 기준):
-```
-2019년 평균 관리비: 월 23만 원
-2022년 평균 관리비: 월 28만 원 (+21.7%)
-2025년 평균 관리비: 월 31만 원 (+10.7%)
-```
+**2. 주택가격 변동률별 손익분기**
 
-### 2.3 매수 시 인플레이션 대응 전략
-
-#### 2.3.1 고정금리 vs 변동금리 선택
-**인플레이션 상승기**:
-- 초기에는 고정금리 유리 (금리 상승 헤지)
-- 금리 정점 이후에는 변동금리 유리
-
-**인플레이션 하락기**:
-- 변동금리 유리 (금리 인하 혜택)
-
-#### 2.3.2 레버리지 활용
-**인플레이션 시 레버리지 효과**:
-```
-자기자본: 2억 원
-대출: 3억 원 (LTV 60%)
-주택가격: 5억 원
-
-5년 후 (연 5% 상승, 인플레이션 3%):
-주택가격: 6.38억 원
-대출잔액: 2.5억 원 (원금 일부 상환)
-순자산: 3.88억 원
-자기자본 수익률: (3.88억 - 2억) ÷ 2억 = 94%
-
-레버리지 없이 2억 원 투자 시:
-주택가격: 2.55억 원
-수익률: 27.5%
-
-레버리지 효과: 94% - 27.5% = 66.5%p
+```typescript
+export function generateBreakevenSeries(...): BreakevenDataPoint[] {
+  const rates = [-0.1, -0.08, -0.05, -0.03, -0.01, 0, 0.01, 0.03, 0.05, 0.07, 0.1, 0.12, 0.15];
+  
+  return rates.map((rate) => ({
+    annualPriceChangeRate: rate,
+    buyNetCost: calculateBuyScenario({ ...buyInputs, annualPriceChangeRate: rate }).effectiveCost,
+    jeonseNetCost: jeonseNet,
+    monthlyRentNetCost: rentNet,
+  }));
+}
 ```
 
-#### 2.3.3 입지 선택
-**인플레이션 저항력이 강한 지역**:
-- 교통 인프라 우수 지역
-- 학군 우수 지역
-- 재개발/재건축 가능 지역
-- 공급 제한 지역 (그린벨트 인접 등)
+- -10%~+15% 범위 분석
+- 어느 변동률에서 매수가 유리한지 시각화
 
+**3. 순자산 변화 시뮬레이션**
 
-## 3. 인플레이션이 전세에 미치는 영향
-
-### 3.1 긍정적 영향 (전세 유리)
-
-#### 3.1.1 전세보증금의 실질가치 하락
-**임차인 관점의 이점**:
-
-전세보증금은 계약 기간 동안 고정된 명목가치를 유지하므로, 인플레이션 발생 시 실질가치가 하락합니다.
-
-**계산 예시**:
-- 전세보증금: 4억 원
-- 계약 기간: 2년
-- 연 인플레이션: 4%
-
+```typescript
+export function generateAssetProjectionSeries(...): AssetProjectionPoint[] {
+  // 공통 기준: 매수 자기자본을 초기 보유 현금으로 설정
+  const buyEquity = purchasePrice - loanAmount;
+  
+  // 전세 초기 투자가능금액
+  const jeonseOwnDeposit = Math.max(0, jeonseInputs.depositAmount - jeonseInputs.loanAmount);
+  const jeonseInitialInvestable = Math.max(0, buyEquity - jeonseOwnDeposit);
+  
+  // 월 절약액 (매수 대비)
+  const jeonseMonthlySaving = buyMonthlyOutflow - jeonseMonthlyOutflow;
+  
+  return Array.from({ length: yearsToHold }, (_, i) => {
+    const year = i + 1;
+    
+    // 매수 순자산: 시세 - 잔여대출
+    const salePrice = Math.floor(purchasePrice * Math.pow(1 + annualPriceChangeRate, year));
+    const remainingLoan = calculateLoanRepayment(..., year).remainingPrincipal;
+    const buyNetAsset = salePrice - remainingLoan;
+    
+    // 전세 순자산: 초기여유금 투자 + 월절약액 적립 + 보증금 - 전세대출
+    const fvInitialJeonse = jeonseInitialInvestable * Math.pow(1 + r, year);
+    const fvSavingJeonse = jeonseMonthlySaving * fvFactor;  // 연금 미래가치
+    const jeonseNetAsset = fvInitialJeonse + fvSavingJeonse + jeonseInputs.depositAmount - jeonseInputs.loanAmount;
+    
+    return { year, buyNetAsset, jeonseNetAsset, monthlyRentNetAsset };
+  });
+}
 ```
-계약 시작 시점 실질가치: 4억 원
-2년 후 실질가치: 4억 ÷ 1.04^2 = 3.69억 원
-실질 부담 감소: 3,100만 원 (7.75%)
+
+**핵심 가정**:
+- 매수 자기자본을 기준선으로 설정
+- 전세/월세는 여유금을 `expectedInvestmentReturn`으로 운용
+- 월 절약액도 동일 수익률로 적립
+
+
+#### 3.2.7 인플레이션 시나리오 (inflation.ts)
+
+**3가지 시나리오 파라미터**:
+
+```typescript
+export function getInflationParameters(scenario: InflationScenario): InflationParameters {
+  const params: Record<InflationScenario, InflationParameters> = {
+    low: {
+      inflationRate: 0.015,              // 1.5% 물가상승률
+      housingPriceGrowth: 0.02,          // 2% 주택가격 상승
+      rentGrowthRate: 0.02,              // 2% 임대료 상승
+      loanInterestRate: 0.03,            // 3% 대출금리
+      expectedInvestmentReturn: 0.05,    // 5% 투자수익률
+    },
+    medium: {
+      inflationRate: 0.03,               // 3% 물가상승률
+      housingPriceGrowth: 0.04,          // 4% 주택가격 상승
+      rentGrowthRate: 0.045,             // 4.5% 임대료 상승
+      loanInterestRate: 0.04,            // 4% 대출금리
+      expectedInvestmentReturn: 0.07,    // 7% 투자수익률
+    },
+    high: {
+      inflationRate: 0.05,               // 5% 물가상승률
+      housingPriceGrowth: 0.065,         // 6.5% 주택가격 상승
+      rentGrowthRate: 0.07,              // 7% 임대료 상승
+      loanInterestRate: 0.055,           // 5.5% 대출금리
+      expectedInvestmentReturn: 0.10,    // 10% 투자수익률
+    },
+  };
+  return params[scenario];
+}
 ```
 
-**장기 거주 시 효과**:
-| 거주 기간 | 인플레이션 2% | 인플레이션 4% | 인플레이션 6% |
-|---------|-------------|-------------|-------------|
-| 2년 | -3.9% | -7.7% | -11.3% |
-| 4년 | -7.7% | -15.0% | -21.5% |
-| 6년 | -11.3% | -21.5% | -30.5% |
-| 10년 | -18.0% | -32.4% | -44.2% |
+**실질 자산가치 계산**:
 
-#### 3.1.2 주택 구입 자금의 투자 기회
-**기회비용의 긍정적 측면**:
-
-전세 거주 시 주택 구입에 필요한 자금을 다른 자산에 투자하여 인플레이션을 헤지할 수 있습니다.
+```typescript
+export function calculateRealValue(
+  nominalValue: number,
+  inflationRate: number,
+  years: number
+): number {
+  return nominalValue / Math.pow(1 + inflationRate, years);
+}
+```
 
 **시나리오 비교**:
-- 매수 필요 자금: 6억 원 (자기자본)
-- 전세보증금: 4억 원
-- 투자 가능 자금: 2억 원
 
-**투자 수익 예시** (연 8% 수익률, 5년):
-```
-투자 원금: 2억 원
-5년 후 가치: 2억 × 1.08^5 = 2.94억 원
-투자 수익: 9,400만 원
-
-인플레이션 조정 (연 3%):
-실질 수익: 9,400만 ÷ 1.03^5 = 8,110만 원
-```
-
-#### 3.1.3 전세대출 실질부담 감소
-**매수와 동일한 메커니즘**:
-
-전세자금 대출을 받은 경우, 인플레이션으로 실질 부채 부담이 감소합니다.
-
-**예시**:
-- 전세대출: 2억 원 (금리 3.5%)
-- 인플레이션: 4%
-- 실질금리: -0.5%
-
-```
-2년 후 실질 부채가치: 2억 ÷ 1.04^2 = 1.85억 원
-실질 부담 감소: 1,500만 원
-```
-
-### 3.2 부정적 영향 (전세 불리)
-
-#### 3.2.1 전세가 상승
-**갱신 시 보증금 인상 압력**:
-
-인플레이션 → 주택가격 상승 → 전세가 상승
-
-**역사적 데이터**:
-| 시기 | 서울 아파트 전세가 상승률 | 물가상승률 | 차이 |
-|-----|----------------------|-----------|------|
-| 2015-2019 | 1.8% | 1.1% | +0.7%p |
-| 2020 | 5.3% | 0.5% | +4.8%p |
-| 2021 | 11.2% | 2.5% | +8.7%p |
-| 2022 | 8.7% | 5.1% | +3.6%p |
-| 2023 | -2.1% | 3.6% | -5.7%p |
-| 2024 | 3.2% | 2.3% | +0.9%p |
-
-**갱신 시 추가 부담 예시**:
-```
-초기 전세: 4억 원
-2년 후 갱신: 4.5억 원 (+12.5%)
-추가 필요 자금: 5,000만 원
-
-대출로 충당 시 (금리 4%):
-연간 이자 부담: 200만 원
+```typescript
+export function compareInflationScenarios(...): ScenarioComparison[] {
+  const scenarios: InflationScenario[] = ['low', 'medium', 'high'];
+  
+  return scenarios.map((scenario) => {
+    const params = getInflationParameters(scenario);
+    
+    // 파라미터 적용하여 재계산
+    const adjustedBuy = { ...buyInputs, annualPriceChangeRate: params.housingPriceGrowth, ... };
+    const results = runAllCalculations(adjustedBuy, adjustedJeonse, adjustedRent);
+    
+    // 실질 자산가치 계산 (인플레이션 조정)
+    const lastIdx = buyInputs.yearsToHold - 1;
+    const nominal = results.assetProjectionSeries[lastIdx];
+    
+    return {
+      scenario,
+      parameters: params,
+      results,
+      realAssetValue: {
+        buy: calculateRealValue(nominal.buyNetAsset, params.inflationRate, yearsToHold),
+        jeonse: calculateRealValue(nominal.jeonseNetAsset, params.inflationRate, yearsToHold),
+        monthlyRent: calculateRealValue(nominal.monthlyRentNetAsset, params.inflationRate, yearsToHold),
+      },
+    };
+  });
+}
 ```
 
-#### 3.2.2 전세 → 월세 전환 압력
-**전세 공급 감소**:
+#### 3.2.8 추천 로직 (recommendation.ts)
 
-인플레이션 → 금리 상승 → 집주인의 전세 기피 → 월세 전환
+**추천 생성 알고리즘**:
 
-**전세 비율 변화** (서울 기준):
-```
-2019년: 전세 42.3%, 월세 57.7%
-2022년: 전세 38.1%, 월세 61.9%
-2025년: 전세 35.4%, 월세 64.6%
-```
-
-**반전세 전환 예시**:
-```
-기존 전세: 4억 원
-반전세 전환: 보증금 3억 + 월세 50만 원
-
-전환율 계산: (4억 - 3억) × 6% ÷ 12 = 50만 원
-실질 전환율: 6% (법정 상한 5% 초과 시 협의)
-```
-
-#### 3.2.3 전세대출 금리 상승
-**대출 이자 부담 증가**:
-
-인플레이션 → 기준금리 인상 → 전세대출 금리 상승
-
-**금리 변화 추이**:
-| 시기 | 전세대출 평균 금리 | 2억 대출 시 연간 이자 |
-|-----|-----------------|------------------|
-| 2020 | 2.3% | 460만 원 |
-| 2021 | 2.7% | 540만 원 |
-| 2022 | 3.8% | 760만 원 |
-| 2023 | 4.7% | 940만 원 |
-| 2024 | 4.2% | 840만 원 |
-| 2025 | 3.5% | 700만 원 |
-
-**변동금리 대출 시 리스크**:
-```
-초기 금리: 2.5% (2020년)
-정점 금리: 5.0% (2023년)
-이자 증가: 연 500만 원 (2억 대출 기준)
-```
-
-#### 3.2.4 깡통전세 위험 증가
-**인플레이션 → 금리 인상 → 주택가격 하락 → 깡통전세**
-
-**위험 시나리오**:
-```
-2021년 계약:
-- 주택 시세: 6억 원
-- 전세보증금: 5억 원
-- 전세가율: 83.3%
-
-2023년 상황:
-- 주택 시세: 4.5억 원 (-25%)
-- 선순위 대출: 1억 원
-- 회수 가능액: 3.5억 원
-- 손실 위험: 1.5억 원
+```typescript
+export function generateRecommendation(
+  inflationScenario: InflationScenario,
+  results: CalculationResults,
+  buyInputs: BuyInputs
+): Recommendation {
+  const lastIdx = buyInputs.yearsToHold - 1;
+  const finalAssets = results.assetProjectionSeries[lastIdx];
+  
+  // 1. 순자산 기준 정렬
+  const assets: Record<ScenarioKey, number> = {
+    buy: finalAssets.buyNetAsset,
+    jeonse: finalAssets.jeonseNetAsset,
+    monthlyRent: finalAssets.monthlyRentNetAsset,
+  };
+  const sorted = Object.entries(assets).sort((a, b) => b[1] - a[1]);
+  const primary = sorted[0][0];
+  const secondary = sorted[1][0];
+  
+  // 2. 시나리오별 추천 이유 생성
+  const reasoning: string[] = [];
+  const warnings: string[] = [];
+  let leverageAdvice: string | undefined;
+  
+  if (inflationScenario === 'low') {
+    if (primary === 'monthlyRent') {
+      reasoning.push('저인플레이션 시기에는 투자 수익으로 월세를 상쇄할 수 있습니다');
+      warnings.push('투자 수익률 5% 이상 달성이 필요합니다');
+    } else if (primary === 'buy') {
+      reasoning.push('낮은 금리로 대출 부담이 적습니다');
+      leverageAdvice = 'LTV 60% 활용 권장';
+    }
+  } else if (inflationScenario === 'medium') {
+    if (primary === 'buy') {
+      reasoning.push('중인플레이션 시기는 레버리지 효과가 큽니다');
+      leverageAdvice = 'LTV 60~70% 활용 + 여유자금 투자 병행';
+      warnings.push('금리 변동 리스크를 고려하세요');
+    }
+  } else {  // high
+    if (primary === 'buy') {
+      reasoning.push('고인플레이션 시기 부동산은 강력한 헤지 수단입니다');
+      leverageAdvice = '최대 LTV 활용 권장 (70%)';
+      warnings.push('금리가 높아 초기 이자 부담이 클 수 있습니다');
+    }
+  }
+  
+  return { primary, secondary, reasoning, warnings, leverageAdvice };
+}
 ```
 
-**깡통전세 판단 기준**:
-```
-위험도 = (전세보증금 + 선순위채권) ÷ 시세
+**추천 기준**:
+1. 순자산 최대화 (명목가치 기준)
+2. 인플레이션 시나리오별 맞춤 조언
+3. 레버리지 전략 제시
+4. 리스크 경고
 
-안전: 70% 이하
-주의: 70~80%
-위험: 80~90%
-깡통: 90% 이상
-```
+---
 
-### 3.3 전세 시 인플레이션 대응 전략
+## 4. UI/UX 구조
 
-#### 3.3.1 계약 기간 선택
-**인플레이션 상승기**:
-- 장기 계약 유리 (2년 + 갱신 2회 = 최대 6년)
-- 보증금 인상 압력 회피
+### 4.1 페이지 구성 (calculator/page.tsx)
 
-**인플레이션 하락기**:
-- 단기 계약 후 재계약 (하락 시세 반영)
-
-#### 3.3.2 전세자금 조달 방식
-**인플레이션 시기별 전략**:
-
-| 상황 | 권장 전략 | 이유 |
-|-----|---------|------|
-| 저금리 + 저인플레이션 | 대출 최소화 | 투자 수익률 낮음 |
-| 저금리 + 고인플레이션 | 대출 최대화 | 실질금리 음수 |
-| 고금리 + 고인플레이션 | 상황별 판단 | 명목금리 vs 실질금리 비교 |
-| 고금리 + 저인플레이션 | 대출 최소화 | 실질금리 높음 |
-
-#### 3.3.3 여유 자금 투자 전략
-**인플레이션 헤지 포트폴리오**:
-
-| 자산 | 비중 | 기대수익률 | 인플레이션 헤지 |
-|-----|-----|----------|--------------|
-| 주식 (국내) | 30% | 7~9% | 중간 |
-| 주식 (해외) | 20% | 8~10% | 높음 |
-| 리츠 (REITs) | 20% | 6~8% | 높음 |
-| 금/원자재 | 10% | 5~7% | 매우 높음 |
-| 채권 | 10% | 3~5% | 낮음 |
-| 현금 | 10% | 2~3% | 없음 |
-
-**예상 포트폴리오 수익률**: 6.5~8.0%
-
-
-## 4. 인플레이션이 월세에 미치는 영향
-
-### 4.1 긍정적 영향 (월세 유리)
-
-#### 4.1.1 보증금의 실질가치 하락
-**전세와 동일한 메커니즘, 규모는 작음**:
-
-월세 보증금은 전세보다 적어 실질가치 하락 효과도 작지만, 여전히 임차인에게 유리합니다.
-
-**예시**:
-- 보증금: 5,000만 원
-- 계약 기간: 2년
-- 인플레이션: 4%
-
-```
-실질가치 하락: 5,000만 ÷ 1.04^2 = 4,623만 원
-실질 부담 감소: 377만 원 (7.5%)
+```typescript
+export default function CalculatorPage() {
+  const calculate = useCalculatorStore((s) => s.calculate);
+  
+  useEffect(() => {
+    calculate();  // 초기 계산
+  }, [calculate]);
+  
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <TopBar />
+      
+      <main className="pb-10 pt-4">
+        {/* 1. 경제 전망 선택 */}
+        <InflationScenarioSelector />
+        
+        {/* 2. 입력 섹션 */}
+        <section className="px-4 space-y-3 mb-4">
+          <PriceStepCard />
+          <PeriodStepCard />
+        </section>
+        
+        {/* 3. 추천 결과 */}
+        <AutoRecommendation />
+        
+        {/* 4. 인플레이션 시나리오별 비교 */}
+        <ScenarioComparisonChart />
+        
+        {/* 5. 순자산 변화 차트 */}
+        <AssetProjectionChart />
+        
+        {/* 6. 레버리지 시뮬레이션 */}
+        <LeverageSimulator />
+        
+        {/* 7. 시나리오 비용 카드 */}
+        <ScenarioSwipeCards />
+        
+        {/* 8. 결과 배너 */}
+        <WinnerBanner />
+      </main>
+    </div>
+  );
+}
 ```
 
-#### 4.1.2 투자 자금 최대화
-**가장 많은 투자 여력 확보**:
+### 4.2 입력 컴포넌트
 
-월세는 초기 자금이 가장 적게 필요하므로, 투자 가능 자금이 최대화됩니다.
-
-**비교 분석**:
-```
-시나리오: 총 자산 5억 원
-
-매수 시:
-- 주택 구입: 5억 원 (전액 투입)
-- 투자 가능 자금: 0원
-
-전세 시:
-- 전세보증금: 4억 원
-- 투자 가능 자금: 1억 원
-
-월세 시:
-- 보증금: 5,000만 원
-- 투자 가능 자금: 4.5억 원
-```
-
-**투자 수익 비교** (5년, 연 8% 수익률):
-```
-전세: 1억 × 1.08^5 = 1.47억 원 (수익 4,700만)
-월세: 4.5억 × 1.08^5 = 6.61억 원 (수익 2.11억)
-
-차이: 1.64억 원
-```
-
-#### 4.1.3 유연성 확보
-**주거 이동의 자유**:
-
-- 낮은 이사 비용 (보증금 규모 작음)
-- 직장/학교 변경 시 신속 대응
-- 인플레이션 시기 지역별 차별화 대응 가능
-
-### 4.2 부정적 영향 (월세 불리)
-
-#### 4.2.1 월세 인상 압력
-**인플레이션의 직접적 영향**:
-
-월세는 인플레이션에 가장 민감하게 반응하는 주거비입니다.
-
-**월세 상승률 데이터**:
-| 시기 | 서울 월세 상승률 | 물가상승률 | 배율 |
-|-----|---------------|-----------|------|
-| 2015-2019 | 2.3% | 1.1% | 2.1배 |
-| 2020 | 1.2% | 0.5% | 2.4배 |
-| 2021 | 3.8% | 2.5% | 1.5배 |
-| 2022 | 6.2% | 5.1% | 1.2배 |
-| 2023 | 5.4% | 3.6% | 1.5배 |
-| 2024 | 4.1% | 2.3% | 1.8배 |
-
-**결론**: 월세 상승률은 물가상승률의 1.2~2.4배
-
-**갱신 시 인상 예시**:
-```
-초기 월세: 100만 원
-2년 후 갱신: 110만 원 (+10%)
-4년 후 갱신: 121만 원 (+10%)
-6년 후 갱신: 133만 원 (+10%)
-
-6년 누적 인상: 33%
-연평균 인상률: 4.9%
-```
-
-**법적 제한**:
-- 주택임대차보호법: 5% 상한 (연 환산)
-- 실제 시장에서는 상한선까지 인상되는 경우 많음
-
-#### 4.2.2 누적 지출 증가
-**월세는 회수 불가능한 비용**:
-
-인플레이션으로 월세가 지속 상승하면, 장기적으로 막대한 비용이 누적됩니다.
-
-**10년 누적 비용 시뮬레이션**:
-```
-초기 월세: 100만 원
-연간 인상률: 5%
-
-연도별 월세 및 누적 비용:
-1년차: 100만 × 12 = 1,200만 (누적 1,200만)
-2년차: 105만 × 12 = 1,260만 (누적 2,460만)
-3년차: 110만 × 12 = 1,323만 (누적 3,783만)
-4년차: 116만 × 12 = 1,389만 (누적 5,172만)
-5년차: 122만 × 12 = 1,459만 (누적 6,631만)
-6년차: 128만 × 12 = 1,532만 (누적 8,163만)
-7년차: 134만 × 12 = 1,608만 (누적 9,771만)
-8년차: 141만 × 12 = 1,689만 (누적 1.146억)
-9년차: 148만 × 12 = 1,773만 (누적 1.323억)
-10년차: 155만 × 12 = 1,862만 (누적 1.509억)
-
-10년 총 지출: 1.509억 원
-평균 월세: 126만 원
-```
-
-**실질가치 조정** (인플레이션 3%):
-```
-명목 총 지출: 1.509억 원
-실질 총 지출: 1.509억 ÷ 1.03^5 (중간값) = 1.30억 원
-```
-
-#### 4.2.3 세제 혜택의 한계
-**월세 세액공제의 제약**:
-
-- 공제 한도: 연 1,000만 원 (월세액 기준)
-- 공제율: 15~17%
-- 실제 공제액: 최대 150~170만 원
-
-**고액 월세 시 한계**:
-```
-월세 150만 원 (연 1,800만 원)
-공제 대상: 1,000만 원 (한도)
-공제액: 1,000만 × 15% = 150만 원
-실효 공제율: 150만 ÷ 1,800만 = 8.3%
-
-월세 200만 원 (연 2,400만 원)
-공제액: 150만 원 (동일)
-실효 공제율: 150만 ÷ 2,400만 = 6.25%
-```
-
-#### 4.2.4 관리비 인상
-**월세와 별도로 발생하는 추가 부담**:
-
-관리비도 인플레이션의 영향을 받아 지속 상승합니다.
-
-**관리비 상승 추이** (서울 84㎡ 기준):
-```
-2019년: 월 23만 원
-2022년: 월 28만 원 (+21.7%)
-2025년: 월 31만 원 (+10.7%)
-
-연평균 상승률: 5.1%
-```
-
-**총 주거비 부담**:
-```
-월세: 150만 원
-관리비: 31만 원
-총 부담: 181만 원
-
-인플레이션 5% 가정 시 5년 후:
-월세: 191만 원
-관리비: 40만 원
-총 부담: 231만 원 (+27.6%)
-```
-
-### 4.3 월세 시 인플레이션 대응 전략
-
-#### 4.3.1 적극적 투자 전략
-**월세의 불리함을 투자 수익으로 상쇄**:
-
-월세 거주 시 최대한 많은 자금을 투자하여 인플레이션을 헤지하고, 월세 지출을 상쇄해야 합니다.
-
-**손익분기 투자수익률 계산**:
-```
-월세: 연 1,800만 원
-투자 가능 자금: 4억 원
-
-필요 수익률 = 1,800만 ÷ 4억 = 4.5%
-
-인플레이션 3% 고려 시:
-실질 필요 수익률 = 4.5% + 3% = 7.5%
-```
-
-**공격적 포트폴리오 예시**:
-| 자산 | 비중 | 기대수익률 |
-|-----|-----|----------|
-| 주식 (국내) | 40% | 8% |
-| 주식 (해외) | 30% | 9% |
-| 리츠 | 15% | 7% |
-| 금/원자재 | 10% | 6% |
-| 현금 | 5% | 3% |
-
-**포트폴리오 기대수익률**: 7.8%
-
-#### 4.3.2 계약 전략
-**인플레이션 시기별 접근**:
-
-**고인플레이션 시기**:
-- 장기 계약 선호 (월세 인상 최소화)
-- 보증금 증액 협상 (월세 인상 대신)
-
-**저인플레이션 시기**:
-- 단기 계약 후 재협상
-- 월세 인하 요구
-
-**계약 갱신 협상 팁**:
-```
-시장 월세: 150만 원
-현재 월세: 140만 원
-인상 요구: 150만 원 (+7.1%)
-
-협상안 1: 보증금 1,000만 원 증액, 월세 145만 원
-협상안 2: 3년 장기 계약, 월세 147만 원 고정
-협상안 3: 2년 계약, 월세 146만 원, 중도 인상 없음
-```
-
-#### 4.3.3 주거비 절감
-**인플레이션 시기 생활비 관리**:
-
-- 에너지 효율 높은 주택 선택
-- 관리비 저렴한 빌라/오피스텔 고려
-- 교통비 절감 가능한 입지 선택
-
-
-## 5. 인플레이션 시나리오별 종합 비교
-
-### 5.1 시나리오 설정
-
-**기본 조건**:
-- 주택 매매가: 6억 원
-- 전세가: 4.5억 원 (전세가율 75%)
-- 월세: 보증금 5,000만 원 + 월세 150만 원
-- 거주 기간: 10년
-- 초기 자산: 6억 원
-- 연 소득: 7,000만 원
-
-**인플레이션 시나리오**:
-1. 저인플레이션: 연 1.5%
-2. 중인플레이션: 연 3.0%
-3. 고인플레이션: 연 5.0%
-
-### 5.2 저인플레이션 시나리오 (연 1.5%)
-
-#### 5.2.1 경제 환경
-- 기준금리: 1.5~2.0%
-- 주택담보대출 금리: 2.5~3.5%
-- 전세대출 금리: 2.0~3.0%
-- 주택가격 상승률: 2.0%
-- 전세가 상승률: 1.5%
-- 월세 상승률: 2.0%
-
-#### 5.2.2 매수 시나리오
-```
-초기 투자:
-- 자기자본: 6억 원
-- 대출: 0원 (전액 자기자본)
-
-연간 비용:
-- 재산세: 80만 원
-- 관리비: 336만 원
-- 합계: 416만 원
-
-10년 후:
-- 주택가격: 6억 × 1.02^10 = 7.31억 원
-- 총 비용: 416만 × 10 = 4,160만 원
-- 순자산: 7.31억 - 0.42억 = 6.89억 원
-- 실질 순자산 (인플레이션 조정): 6.89억 ÷ 1.015^10 = 6.00억 원
-- 실질 수익률: 0%
-```
-
-#### 5.2.3 전세 시나리오
-```
-초기 투자:
-- 전세보증금: 4.5억 원
-- 투자 자금: 1.5억 원
-
-연간 비용:
-- 전세대출 이자: 0원 (무대출)
-- 기회비용: 4.5억 × 3% = 1,350만 원
-
-투자 수익 (연 5% 수익률):
-- 10년 후: 1.5억 × 1.05^10 = 2.44억 원
-- 투자 수익: 9,400만 원
-
-10년 후:
-- 보증금 회수: 4.5억 원
-- 투자 자산: 2.44억 원
-- 총 자산: 6.94억 원
-- 총 비용: 1.35억 원 (기회비용)
-- 순자산: 6.94억 - 1.35억 = 5.59억 원
-- 실질 순자산: 5.59억 ÷ 1.015^10 = 4.87억 원
-- 실질 손실: -1.13억 원 (-18.8%)
-```
-
-#### 5.2.4 월세 시나리오
-```
-초기 투자:
-- 보증금: 5,000만 원
-- 투자 자금: 5.5억 원
-
-연간 비용:
-- 월세: 150만 × 12 = 1,800만 원 (연 2% 인상)
-- 10년 누적: 1.97억 원
-
-투자 수익 (연 5% 수익률):
-- 10년 후: 5.5억 × 1.05^10 = 8.96억 원
-- 투자 수익: 3.46억 원
-
-10년 후:
-- 보증금 회수: 5,000만 원
-- 투자 자산: 8.96억 원
-- 총 자산: 9.46억 원
-- 총 비용: 1.97억 원 (월세)
-- 순자산: 9.46억 - 1.97억 = 7.49억 원
-- 실질 순자산: 7.49억 ÷ 1.015^10 = 6.53억 원
-- 실질 수익: +0.53억 원 (+8.8%)
-```
-
-**저인플레이션 결론**: 월세 + 투자 > 매수 > 전세
-
-### 5.3 중인플레이션 시나리오 (연 3.0%)
-
-#### 5.3.1 경제 환경
-- 기준금리: 2.5~3.5%
-- 주택담보대출 금리: 3.5~4.5%
-- 전세대출 금리: 3.0~4.0%
-- 주택가격 상승률: 4.0%
-- 전세가 상승률: 3.5%
-- 월세 상승률: 4.5%
-
-#### 5.3.2 매수 시나리오
-```
-초기 투자:
-- 자기자본: 6억 원
-- 대출: 0원
-
-연간 비용:
-- 재산세: 80만 원
-- 관리비: 336만 원 (연 3% 인상)
-- 합계: 초년도 416만 원
-
-10년 후:
-- 주택가격: 6억 × 1.04^10 = 8.88억 원
-- 총 비용: 약 4,750만 원
-- 순자산: 8.88억 - 0.48억 = 8.40억 원
-- 실질 순자산: 8.40억 ÷ 1.03^10 = 6.25억 원
-- 실질 수익률: +4.2%
-```
-
-#### 5.3.3 전세 시나리오
-```
-초기 투자:
-- 전세보증금: 4.5억 원
-- 투자 자금: 1.5억 원
-
-연간 비용:
-- 기회비용: 4.5억 × 5% = 2,250만 원
-
-투자 수익 (연 7% 수익률):
-- 10년 후: 1.5억 × 1.07^10 = 2.95억 원
-
-10년 후:
-- 보증금 회수: 4.5억 원
-- 투자 자산: 2.95억 원
-- 총 자산: 7.45억 원
-- 총 비용: 2.25억 원
-- 순자산: 7.45억 - 2.25억 = 5.20억 원
-- 실질 순자산: 5.20억 ÷ 1.03^10 = 3.87억 원
-- 실질 손실: -2.13억 원 (-35.5%)
-```
-
-#### 5.3.4 월세 시나리오
-```
-초기 투자:
-- 보증금: 5,000만 원
-- 투자 자금: 5.5억 원
-
-연간 비용:
-- 월세: 150만 × 12 = 1,800만 원 (연 4.5% 인상)
-- 10년 누적: 2.27억 원
-
-투자 수익 (연 7% 수익률):
-- 10년 후: 5.5억 × 1.07^10 = 10.82억 원
-
-10년 후:
-- 보증금 회수: 5,000만 원
-- 투자 자산: 10.82억 원
-- 총 자산: 11.32억 원
-- 총 비용: 2.27억 원
-- 순자산: 11.32억 - 2.27억 = 9.05억 원
-- 실질 순자산: 9.05억 ÷ 1.03^10 = 6.73억 원
-- 실질 수익: +0.73억 원 (+12.2%)
-```
-
-**중인플레이션 결론**: 월세 + 투자 > 매수 > 전세
-
-### 5.4 고인플레이션 시나리오 (연 5.0%)
-
-#### 5.4.1 경제 환경
-- 기준금리: 4.0~5.5%
-- 주택담보대출 금리: 5.0~6.5%
-- 전세대출 금리: 4.5~6.0%
-- 주택가격 상승률: 6.5%
-- 전세가 상승률: 6.0%
-- 월세 상승률: 7.0%
-
-#### 5.4.2 매수 시나리오
-```
-초기 투자:
-- 자기자본: 6억 원
-- 대출: 0원
-
-연간 비용:
-- 재산세: 80만 원
-- 관리비: 336만 원 (연 5% 인상)
-- 합계: 초년도 416만 원
-
-10년 후:
-- 주택가격: 6억 × 1.065^10 = 11.18억 원
-- 총 비용: 약 5,230만 원
-- 순자산: 11.18억 - 0.52억 = 10.66억 원
-- 실질 순자산: 10.66억 ÷ 1.05^10 = 6.54억 원
-- 실질 수익률: +9.0%
-```
-
-#### 5.4.3 전세 시나리오
-```
-초기 투자:
-- 전세보증금: 4.5억 원
-- 투자 자금: 1.5억 원
-
-연간 비용:
-- 기회비용: 4.5억 × 8% = 3,600만 원
-
-투자 수익 (연 10% 수익률):
-- 10년 후: 1.5억 × 1.10^10 = 3.89억 원
-
-10년 후:
-- 보증금 회수: 4.5억 원
-- 투자 자산: 3.89억 원
-- 총 자산: 8.39억 원
-- 총 비용: 3.60억 원
-- 순자산: 8.39억 - 3.60억 = 4.79억 원
-- 실질 순자산: 4.79억 ÷ 1.05^10 = 2.94억 원
-- 실질 손실: -3.06억 원 (-51.0%)
-```
-
-#### 5.4.4 월세 시나리오
-```
-초기 투자:
-- 보증금: 5,000만 원
-- 투자 자금: 5.5억 원
-
-연간 비용:
-- 월세: 150만 × 12 = 1,800만 원 (연 7% 인상)
-- 10년 누적: 2.96억 원
-
-투자 수익 (연 10% 수익률):
-- 10년 후: 5.5억 × 1.10^10 = 14.27억 원
-
-10년 후:
-- 보증금 회수: 5,000만 원
-- 투자 자산: 14.27억 원
-- 총 자산: 14.77억 원
-- 총 비용: 2.96억 원
-- 순자산: 14.77억 - 2.96억 = 11.81억 원
-- 실질 순자산: 11.81억 ÷ 1.05^10 = 7.25억 원
-- 실질 수익: +1.25억 원 (+20.8%)
-```
-
-**고인플레이션 결론**: 월세 + 투자 > 매수 > 전세
-
-### 5.5 레버리지 활용 시나리오 (중인플레이션 기준)
-
-#### 5.5.1 매수 + 대출 (LTV 60%)
-```
-초기 투자:
-- 자기자본: 2.4억 원
-- 대출: 3.6억 원 (금리 4%)
-- 여유 자금: 3.6억 원 (투자 가능)
-
-연간 비용:
-- 대출이자: 1,440만 원
-- 재산세: 80만 원
-- 관리비: 336만 원
-- 합계: 1,856만 원
-
-투자 수익 (3.6억, 연 7%):
-- 10년 후: 3.6억 × 1.07^10 = 7.08억 원
-- 투자 수익: 3.48억 원
-
-10년 후:
-- 주택가격: 8.88억 원
-- 대출잔액: 3.6억 원 (만기일시 가정)
-- 순주택자산: 5.28억 원
-- 투자 자산: 7.08억 원
-- 총 자산: 12.36억 원
-- 총 비용: 1.86억 원
-- 순자산: 12.36억 - 1.86억 = 10.50억 원
-- 실질 순자산: 10.50억 ÷ 1.03^10 = 7.81억 원
-- 실질 수익률: +30.2%
-```
-
-**레버리지 효과**: 무대출 매수 대비 +1.56억 원 (+25%)
-
-### 5.6 종합 비교표
-
-#### 5.6.1 명목 순자산 비교 (10년 후)
-
-| 시나리오 | 저인플레이션 | 중인플레이션 | 고인플레이션 |
-|---------|------------|------------|------------|
-| 매수 (무대출) | 6.89억 | 8.40억 | 10.66억 |
-| 매수 (LTV 60%) | - | 10.50억 | - |
-| 전세 | 5.59억 | 5.20억 | 4.79억 |
-| 월세 | 7.49억 | 9.05억 | 11.81억 |
-
-#### 5.6.2 실질 순자산 비교 (10년 후, 인플레이션 조정)
-
-| 시나리오 | 저인플레이션 | 중인플레이션 | 고인플레이션 |
-|---------|------------|------------|------------|
-| 매수 (무대출) | 6.00억 (0%) | 6.25억 (+4.2%) | 6.54억 (+9.0%) |
-| 매수 (LTV 60%) | - | 7.81억 (+30.2%) | - |
-| 전세 | 4.87억 (-18.8%) | 3.87억 (-35.5%) | 2.94억 (-51.0%) |
-| 월세 | 6.53억 (+8.8%) | 6.73억 (+12.2%) | 7.25억 (+20.8%) |
-
-#### 5.6.3 핵심 인사이트
-
-1. **저인플레이션**: 월세 + 적극적 투자가 가장 유리
-2. **중인플레이션**: 레버리지 활용 매수 > 월세 + 투자 > 무대출 매수 > 전세
-3. **고인플레이션**: 월세 + 투자 > 매수 > 전세
-4. **전세는 모든 시나리오에서 불리**: 기회비용이 크고 자산 증식 효과 없음
-5. **레버리지는 인플레이션 시기에 강력**: 실질 부채 감소 + 투자 수익 극대화
-
-
-## 6. 인플레이션 대응 의사결정 프레임워크
-
-### 6.1 의사결정 트리
-
-```
-인플레이션 전망은?
-│
-├─ 저인플레이션 (< 2%) 예상
-│  │
-│  ├─ 투자 역량 있음 → 월세 + 투자
-│  ├─ 투자 역량 없음 → 매수 (안정성)
-│  └─ 유동성 중시 → 월세
-│
-├─ 중인플레이션 (2~4%) 예상
-│  │
-│  ├─ 대출 가능 → 매수 + 레버리지 + 투자
-│  ├─ 투자 역량 있음 → 월세 + 투자
-│  ├─ 안정성 중시 → 매수 (무대출)
-│  └─ 자금 부족 → 전세 (차선책)
-│
-└─ 고인플레이션 (> 4%) 예상
-   │
-   ├─ 투자 역량 있음 → 월세 + 공격적 투자
-   ├─ 대출 가능 → 매수 + 최대 레버리지
-   ├─ 안정성 중시 → 매수 (무대출)
-   └─ 자금 부족 → 전세 (단기) → 매수 전환
-```
-
-### 6.2 상황별 최적 전략
-
-#### 6.2.1 자산 규모별 전략
-
-**자산 3억 원 미만**:
-| 인플레이션 | 1순위 | 2순위 | 이유 |
-|----------|------|------|------|
-| 저 | 월세 + 투자 | 전세 | 매수 불가능, 투자로 자산 증식 |
-| 중 | 월세 + 투자 | 전세 | 동일 |
-| 고 | 월세 + 투자 | 전세 단기 | 투자 수익 극대화 필요 |
-
-**자산 3~6억 원**:
-| 인플레이션 | 1순위 | 2순위 | 이유 |
-|----------|------|------|------|
-| 저 | 월세 + 투자 | 매수 (대출) | 투자 수익률 우위 |
-| 중 | 매수 (대출) + 투자 | 월세 + 투자 | 레버리지 효과 |
-| 고 | 매수 (대출) + 투자 | 월세 + 투자 | 부동산 상승 + 레버리지 |
-
-**자산 6억 원 이상**:
-| 인플레이션 | 1순위 | 2순위 | 이유 |
-|----------|------|------|------|
-| 저 | 월세 + 투자 | 매수 (무대출) | 투자 다각화 |
-| 중 | 매수 (대출) + 투자 | 매수 (무대출) | 레버리지 + 투자 병행 |
-| 고 | 매수 (대출) + 투자 | 월세 + 투자 | 자산 증식 극대화 |
-
-#### 6.2.2 연령대별 전략
-
-**20~30대 (자산 형성기)**:
-- **저인플레이션**: 월세 + 주식/ETF 투자 (70% 이상)
-- **중인플레이션**: 월세 + 공격적 투자 or 소형 주택 매수 + 대출
-- **고인플레이션**: 월세 + 초공격적 투자 (주식 80%)
-- **핵심**: 유동성 확보, 경력 개발, 자산 증식 우선
-
-**40~50대 (자산 증식기)**:
-- **저인플레이션**: 매수 (대출) + 투자 병행
-- **중인플레이션**: 매수 (대출) + 투자 병행 (최적 시기)
-- **고인플레이션**: 매수 (대출) + 투자 or 월세 + 투자
-- **핵심**: 레버리지 활용, 포트폴리오 다각화
-
-**60대 이상 (자산 보전기)**:
-- **저인플레이션**: 매수 (무대출) + 안전 자산
-- **중인플레이션**: 매수 (무대출) + 배당주/채권
-- **고인플레이션**: 매수 (무대출) + 인플레이션 헤지 자산
-- **핵심**: 안정성, 현금흐름 확보
-
-#### 6.2.3 직업 안정성별 전략
-
-**고정 소득 (공무원, 대기업)**:
-- 대출 활용 유리 (신용도 높음)
-- 인플레이션 시 매수 + 레버리지 추천
-- 고정 급여의 실질가치 하락 → 부동산으로 헤지
-
-**변동 소득 (자영업, 프리랜서)**:
-- 유동성 확보 중요
-- 월세 + 투자 추천
-- 대출 부담 최소화
-
-**고소득 전문직**:
-- 공격적 투자 가능
-- 월세 + 다양한 자산 투자
-- 또는 매수 + 추가 투자 부동산
-
-### 6.3 인플레이션 국면별 타이밍 전략
-
-#### 6.3.1 인플레이션 상승 초기
-**특징**:
-- 금리 인상 시작
-- 주택가격 여전히 상승
-- 전월세 상승 압력
-
-**전략**:
-1. **매수 고려 시점**: 금리 인상 전 고정금리 대출 확보
-2. **전세**: 장기 계약 체결 (2년 + 갱신)
-3. **월세**: 장기 계약 또는 보증금 증액 협상
-4. **투자**: 인플레이션 헤지 자산 비중 확대 (부동산, 원자재, 금)
-
-#### 6.3.2 인플레이션 정점
-**특징**:
-- 금리 최고점
-- 주택가격 상승 둔화 또는 하락
-- 전세 → 월세 전환 가속
-
-**전략**:
-1. **매수**: 관망 (가격 조정 대기)
-2. **전세**: 단기 계약 (가격 하락 기대)
-3. **월세**: 협상 여지 증가
-4. **투자**: 현금 비중 확대, 저평가 자산 발굴
-
-#### 6.3.3 인플레이션 하락기
-**특징**:
-- 금리 인하 시작
-- 주택가격 바닥 형성
-- 전월세 안정화
-
-**전략**:
-1. **매수**: 최적 매수 시점 (저금리 + 저가격)
-2. **전세**: 단기 계약 후 매수 전환 준비
-3. **월세**: 월세 인하 협상 가능
-4. **투자**: 위험자산 비중 확대 (주식, 부동산)
-
-### 6.4 실전 체크리스트
-
-#### 6.4.1 매수 결정 전 체크리스트
-
-**인플레이션 관련**:
-- [ ] 현재 인플레이션율과 향후 3년 전망 확인
-- [ ] 기준금리 방향성 파악 (인상/동결/인하)
-- [ ] 주택가격 사이클 위치 파악 (상승/정점/하락/바닥)
-- [ ] 대출금리 고정/변동 선택 (인플레이션 전망 기반)
-- [ ] 레버리지 비율 결정 (LTV 40~70%)
-- [ ] 여유 자금 투자 계획 수립
-- [ ] 10년 후 실질 자산가치 시뮬레이션
-
-**일반 사항**:
-- [ ] 입지 분석 (교통, 학군, 개발 계획)
-- [ ] 매물 가격의 적정성 (시세 대비)
-- [ ] 향후 5년 거주 가능 여부
-- [ ] 비상 자금 확보 (최소 1년 생활비)
-
-#### 6.4.2 전세 결정 전 체크리스트
-
-**인플레이션 관련**:
-- [ ] 전세가 상승률 추이 확인
-- [ ] 갱신 시 예상 인상률 계산
-- [ ] 전세 → 월세 전환 가능성 평가
-- [ ] 보증금의 기회비용 계산
-- [ ] 여유 자금 투자 계획 (목표 수익률 설정)
-- [ ] 2~4년 후 매수 전환 가능성 검토
-
-**일반 사항**:
-- [ ] 깡통전세 위험 평가 (전세가율 80% 이하)
-- [ ] 등기부등본 확인 (선순위 채권)
-- [ ] 전세보증보험 가입
-- [ ] 집주인 재정 상태 확인
-
-#### 6.4.3 월세 결정 전 체크리스트
-
-**인플레이션 관련**:
-- [ ] 월세 상승률 추이 확인
-- [ ] 10년 누적 월세 비용 계산
-- [ ] 투자 가능 자금 규모 파악
-- [ ] 목표 투자 수익률 설정 (월세 상쇄 가능 수준)
-- [ ] 포트폴리오 구성 계획
-- [ ] 월세 세액공제 혜택 계산
-
-**일반 사항**:
-- [ ] 월 소득 대비 월세 비율 (30% 이하 권장)
-- [ ] 관리비 수준 확인
-- [ ] 계약 기간 협상 (2년 vs 1년)
-- [ ] 중도 해지 조건 확인
-
-### 6.5 인플레이션 모니터링 지표
-
-#### 6.5.1 거시경제 지표
-| 지표 | 확인 주기 | 출처 | 활용 |
-|-----|---------|------|------|
-| 소비자물가지수 | 월 1회 | 통계청 | 인플레이션 추세 파악 |
-| 기준금리 | 금통위 회의 | 한국은행 | 대출금리 전망 |
-| 주택가격지수 | 주 1회 | 한국부동산원 | 매수 타이밍 판단 |
-| 전월세가격지수 | 주 1회 | 한국부동산원 | 임차 비용 전망 |
-| 건설자재지수 | 월 1회 | 한국은행 | 주택가격 선행지표 |
-
-#### 6.5.2 금융시장 지표
-| 지표 | 확인 주기 | 의미 |
-|-----|---------|------|
-| 국고채 3년물 금리 | 일일 | 고정금리 대출 기준 |
-| CD 91일물 금리 | 일일 | 변동금리 대출 기준 |
-| 회사채 AA- 금리 | 일일 | 신용 스프레드 |
-| 원/달러 환율 | 일일 | 수입 인플레이션 압력 |
-
-#### 6.5.3 부동산 시장 지표
-| 지표 | 확인 주기 | 의미 |
-|-----|---------|------|
-| 주택 거래량 | 월 1회 | 시장 활성도 |
-| 미분양 주택 수 | 월 1회 | 공급 과잉 여부 |
-| 전세가율 | 월 1회 | 전세 → 월세 전환 압력 |
-| 분양가 상한제 적용 | 수시 | 신규 공급 가격 |
-
-### 6.6 인플레이션 시나리오별 행동 지침
-
-#### 6.6.1 인플레이션 급등 시 (연 5% 이상)
-
-**즉시 행동**:
-1. **매수 보유자**: 대출 고정금리 전환 검토
-2. **전세 거주자**: 장기 계약 체결 (최대 6년)
-3. **월세 거주자**: 장기 계약 또는 보증금 증액 협상
-4. **투자자**: 인플레이션 헤지 자산 비중 확대 (부동산, 금, 원자재, 해외주식)
-
-**중기 전략** (6개월~2년):
-1. 실물자산 비중 확대
-2. 고정금리 부채 활용 (실질 부채 감소 효과)
-3. 현금 보유 최소화
-4. 임금 인상 협상 또는 이직 고려
-
-#### 6.6.2 디플레이션 전환 시 (마이너스 물가)
-
-**즉시 행동**:
-1. **매수 보유자**: 대출 변동금리 전환 검토
-2. **전세 거주자**: 단기 계약 (보증금 인하 기대)
-3. **월세 거주자**: 월세 인하 협상
-4. **투자자**: 현금 및 채권 비중 확대
-
-**중기 전략**:
-1. 부동산 매수 관망 (추가 하락 가능성)
-2. 고정금리 부채 조기 상환 검토
-3. 안전자산 비중 확대
-4. 소비 지출 확대 (구매력 증가)
-
-#### 6.6.3 스태그플레이션 시 (고물가 + 경기침체)
+#### 4.2.1 NumberPadInput (숫자 입력 바텀시트)
 
 **특징**:
-- 물가 상승 + 실업률 증가
-- 소득 감소 + 생활비 증가
-- 자산가격 혼조 (부동산 하락, 금 상승)
+- 카드 형태 버튼 클릭 → 바텀시트 오픈
+- Framer Motion 애니메이션
+- 프리셋 버튼 + 슬라이더 조합
+- 설정 버튼 (톱니바퀴) → AdvancedSheet 오픈
 
-**대응 전략**:
-1. **유동성 최우선**: 월세 거주 + 현금 확보
-2. **부채 최소화**: 대출 상환 우선
-3. **방어적 투자**: 금, 달러, 필수소비재 주식
-4. **소득 다각화**: 부업, 재교육
-
-### 6.7 최종 의사결정 공식
-
-#### 6.7.1 매수 vs 임차 판단 공식
-
-```
-매수 유리 조건:
-(예상 주택가격 상승률 - 대출금리) > (투자 기대수익률 - 임차료 상승률)
-
-예시:
-주택 상승률 4% - 대출금리 3.5% = 0.5%
-투자 수익률 7% - 월세 상승률 5% = 2%
-
-결과: 0.5% < 2% → 월세 + 투자 유리
+**구조**:
+```typescript
+<NumberPadInput
+  label="매수가격"
+  value={buyInputs.purchasePrice}
+  onChange={(v) => updateBuyInputs({ purchasePrice: v, loanAmount: Math.floor(v * 0.6) })}
+  unit="억원"
+  presets={[{ label: '3억', value: 300_000_000 }, ...]}
+  min={100_000_000}
+  max={3_000_000_000}
+  step={10_000_000}
+  onSettingsClick={() => setOpenSheet('buy')}
+/>
 ```
 
-#### 6.7.2 실질 수익률 비교 공식
+**바텀시트 내부**:
+1. 드래그 핸들 (회색 바)
+2. 현재 값 표시 (큰 폰트)
+3. 프리셋 버튼 그리드
+4. 슬라이더 (min~max)
+5. 확인 버튼
 
+#### 4.2.2 AdvancedSheet (고급 설정 바텀시트)
+
+**매수 설정**:
+- 대출 금액 슬라이더
+- 대출 금리 슬라이더
+- 연간 주택가격 변동률 슬라이더
+- 주택 수 선택 (1/2/3주택+)
+- 상환 방식 선택 (원리금균등/원금균등/만기일시)
+- 생애최초 구입 토글
+
+**전세 설정**:
+- 전세대출 금액 슬라이더
+- 전세대출 금리 슬라이더
+- 전세보증보험 선택 (없음/HF/HUG/SGI)
+
+**월세 설정**:
+- 전용 설정 없음 (공통 설정만 사용)
+
+#### 4.2.3 InflationScenarioSelector
+
+**3가지 시나리오 버튼**:
+```typescript
+const SCENARIOS = [
+  { key: 'low', label: '저인플레이션', rate: '1.5%', color: '#10B981', desc: '안정적 경제' },
+  { key: 'medium', label: '중인플레이션', rate: '3%', color: '#F59E0B', desc: '일반적 상황' },
+  { key: 'high', label: '고인플레이션', rate: '5%', color: '#EF4444', desc: '고물가 시대' },
+];
 ```
-실질 수익률 = [(1 + 명목수익률) ÷ (1 + 인플레이션율)] - 1
 
-매수 실질 수익률:
-= [(1 + 주택상승률) ÷ (1 + 인플레이션)] - 1 - 보유비용률
+- 선택된 시나리오는 테두리 강조 + 배경색 변경
+- 클릭 시 `setInflationScenario()` → 자동 재계산
 
-임차 + 투자 실질 수익률:
-= [(1 + 투자수익률) ÷ (1 + 인플레이션)] - 1 - 임차비용률
+### 4.3 결과 컴포넌트
+
+#### 4.3.1 AutoRecommendation (AI 추천 결과)
+
+**구조**:
+```typescript
+<div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl p-5 text-white">
+  {/* 최적 선택 */}
+  <div className="bg-white/20 rounded-2xl p-3">
+    <p className="text-2xl font-bold">{LABELS[recommendation.primary]}</p>
+    <p className="text-xs">차선: {LABELS[recommendation.secondary]}</p>
+  </div>
+  
+  {/* 추천 이유 */}
+  {recommendation.reasoning.map((reason) => (
+    <div className="flex gap-2">
+      <span className="text-yellow-300">•</span>
+      <p className="text-sm">{reason}</p>
+    </div>
+  ))}
+  
+  {/* 레버리지 전략 */}
+  {recommendation.leverageAdvice && (
+    <div className="bg-white/10 rounded-xl p-3">
+      <p className="text-xs">💰 레버리지 전략</p>
+      <p className="text-sm">{recommendation.leverageAdvice}</p>
+    </div>
+  )}
+  
+  {/* 주의사항 */}
+  {recommendation.warnings.map((warning) => (
+    <p className="text-xs">• {warning}</p>
+  ))}
+</div>
 ```
 
-#### 6.7.3 손익분기 인플레이션율
+#### 4.3.2 LeverageSimulator (레버리지 시뮬레이터)
 
+**기능**:
+- LTV 비율 슬라이더 (0~70%)
+- 대출금 / 자기자본 표시
+- 자기자본 수익률(ROE) 계산
+- 레버리지 효과 표시 (무대출 대비)
+
+**계산 로직**:
+```typescript
+const loanAmount = Math.floor(purchasePrice * (ltv / 100));
+const equity = purchasePrice - loanAmount;
+
+const futureValue = purchasePrice * Math.pow(1 + annualPriceChangeRate, yearsToHold);
+const priceGain = futureValue - purchasePrice;
+const roe = equity > 0 ? (priceGain / equity) * 100 : 0;
+
+const baseRoe = (priceGain / purchasePrice) * 100;
+const leverageEffect = roe - baseRoe;
 ```
-손익분기 인플레이션율 = 
-(매수 총비용 - 임차 총비용) ÷ (주택가격 - 투자원금)
 
-이 값보다 실제 인플레이션이 높으면 → 매수 유리
-이 값보다 실제 인플레이션이 낮으면 → 임차 + 투자 유리
+**주의사항**:
+- 이자 비용 미반영 단순 수익률
+- 실제 수익은 대출이자 차감 필요
+
+#### 4.3.3 ScenarioSwipeCards (시나리오 스와이프 카드)
+
+**특징**:
+- Framer Motion 드래그 제스처
+- 3개 카드 좌우 스와이프
+- 각 카드 클릭 → CostDetailSheet 오픈
+
+**드래그 로직**:
+```typescript
+const SWIPE_THRESHOLD = 40;
+const SWIPE_VELOCITY_THRESHOLD = 400;
+
+function handleDragEnd(_, info) {
+  const dx = info.offset.x;
+  const vx = info.velocity.x;
+  
+  if ((dx < -SWIPE_THRESHOLD || vx < -SWIPE_VELOCITY_THRESHOLD) && activeIndex < 2) {
+    goTo(activeIndex + 1);
+  } else if ((dx > SWIPE_THRESHOLD || vx > SWIPE_VELOCITY_THRESHOLD) && activeIndex > 0) {
+    goTo(activeIndex - 1);
+  } else {
+    // 원위치
+    animate(x, -activeIndex * width, { type: 'spring', damping: 30, stiffness: 300 });
+  }
+}
 ```
 
-## 7. 결론 및 핵심 요약
+**카드 내용**:
+- 시나리오 이름 + 색상
+- 총 비용 (큰 폰트)
+- 월 평균 비용
+- 순위 표시 (🥇🥈🥉)
 
-### 7.1 인플레이션 영향 핵심 요약
+#### 4.3.4 CostDetailSheet (비용 상세 바텀시트)
 
-| 구분 | 매수 | 전세 | 월세 |
-|-----|------|------|------|
-| **인플레이션 헤지** | ★★★★★ | ★★☆☆☆ | ★☆☆☆☆ |
-| **저인플레이션 유리도** | ★★★☆☆ | ★★☆☆☆ | ★★★★☆ |
-| **고인플레이션 유리도** | ★★★★☆ | ★☆☆☆☆ | ★★★★★ |
-| **레버리지 효과** | ★★★★★ | ★★★☆☆ | ★☆☆☆☆ |
-| **투자 기회** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
-| **유동성** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
+**매수 상세**:
+- 초기 비용: 취득세, 중개수수료, 법무사비, 채권할인, 등록세, 인지세
+- 연간 보유비용: 재산세, 종부세, 관리비, 대출이자
+- 처분 비용: 양도세, 중개수수료
+- 기회비용
+- 세제 혜택
+- 자산 이익: 최종 시세, 시세 상승분, 실질 주거비
 
-### 7.2 인플레이션 시나리오별 최적 선택
+**전세 상세**:
+- 초기 비용: 중개수수료, 보증보험료
+- 주기적 비용: 대출이자, 기회비용
+- 세제 혜택: 대출이자 소득공제
 
-1. **저인플레이션 (< 2%)**: 월세 + 투자 > 매수 > 전세
-2. **중인플레이션 (2~4%)**: 매수 (레버리지) > 월세 + 투자 > 매수 (무대출) > 전세
-3. **고인플레이션 (> 4%)**: 월세 + 투자 ≥ 매수 (레버리지) > 매수 (무대출) > 전세
+**월세 상세**:
+- 초기 비용: 중개수수료
+- 주기적 비용: 총 월세, 기회비용
+- 세제 혜택: 월세 세액공제
 
-### 7.3 핵심 인사이트
+### 4.4 차트 컴포넌트 (Recharts)
 
-1. **전세는 인플레이션에 가장 취약**: 기회비용 크고, 자산 증식 효과 없음
-2. **레버리지는 인플레이션의 친구**: 실질 부채 감소 + 자산 증식 효과
-3. **월세 + 투자는 만능 전략**: 모든 인플레이션 시나리오에서 경쟁력 있음 (단, 투자 역량 필요)
-4. **매수는 중고인플레이션에 강함**: 자산가치 상승 + 레버리지 효과
-5. **인플레이션 전망이 핵심**: 향후 5~10년 인플레이션 전망에 따라 전략 수립
+#### 4.4.1 AssetProjectionChart (순자산 변화 차트)
 
-### 7.4 실전 적용 가이드
+**타입**: LineChart
+**데이터**: `assetProjectionSeries`
+**라인**:
+- 매수 순자산 (파란색)
+- 전세 순자산 (주황색)
+- 월세 순자산 (초록색)
 
-**Step 1**: 현재 인플레이션 수준 및 향후 전망 파악
-**Step 2**: 본인의 자산 규모, 연령, 투자 역량 평가
-**Step 3**: 의사결정 트리 및 체크리스트 활용
-**Step 4**: 시나리오별 시뮬레이션 실행 (웹 계산기 활용)
-**Step 5**: 최적 전략 선택 및 실행
-**Step 6**: 분기별 모니터링 및 전략 조정
+**특징**:
+- X축: 연도 (1~20년)
+- Y축: 억원 단위
+- 현재 보유기간에 세로선 표시
+- 커스텀 툴팁 (연도별 3가지 값 표시)
 
-### 7.5 웹 서비스 구현 시 반영 사항
+#### 4.4.2 ScenarioComparisonChart (시나리오 비교 차트)
 
-1. **인플레이션 시나리오 입력**: 저/중/고 선택 또는 직접 입력
-2. **실질가치 계산**: 모든 결과를 명목/실질 병행 표시
-3. **레버리지 시뮬레이션**: LTV 비율별 결과 비교
-4. **투자 수익률 설정**: 인플레이션 수준별 권장 수익률 제시
-5. **민감도 분석**: 인플레이션율 변화에 따른 결과 변화 시각화
-6. **타이밍 가이드**: 현재 경제 상황 기반 추천 전략 제시
+**타입**: BarChart
+**데이터**: `scenarioComparisons` → 실질 자산가치
+**바**:
+- 매수 (파란색)
+- 전세 (주황색)
+- 월세 (초록색)
+
+**특징**:
+- X축: 저/중/고 인플레이션
+- Y축: 억원 단위
+- 인플레이션 조정 후 실질 가치 표시
+
+---
+
+## 5. 타입 시스템 (types/index.ts)
+
+### 5.1 기본 타입
+
+```typescript
+type Won = number;              // 원화 금액 (정수)
+type Rate = number;             // 비율 (소수): 5% = 0.05
+type Years = number;            // 연수 (양의 정수)
+type HomeOwnerCount = 1 | 2 | 3;
+type LoanRepaymentType = 'equal_payment' | 'equal_principal' | 'bullet';
+type JeonseInsuranceProvider = 'none' | 'hf' | 'hug' | 'sgi';
+type ScenarioKey = 'buy' | 'jeonse' | 'monthlyRent';
+type InflationScenario = 'low' | 'medium' | 'high';
+```
+
+### 5.2 입력 타입
+
+```typescript
+interface BuyInputs {
+  purchasePrice: Won;
+  areaM2: number;
+  numHomes: HomeOwnerCount;
+  loanAmount: Won;
+  loanRate: Rate;
+  loanType: LoanRepaymentType;
+  yearsToHold: Years;
+  annualPriceChangeRate: Rate;
+  annualIncome: Won;
+  isFirstHomeBuyer: boolean;
+  isRegulatedZone: boolean;
+  expectedInvestmentReturn: Rate;
+}
+
+interface JeonseInputs {
+  depositAmount: Won;
+  loanAmount: Won;
+  loanRate: Rate;
+  insuranceProvider: JeonseInsuranceProvider;
+  yearsToHold: Years;
+  expectedInvestmentReturn: Rate;
+  annualIncome: Won;
+}
+
+interface MonthlyRentInputs {
+  depositAmount: Won;
+  monthlyRent: Won;
+  yearsToHold: Years;
+  expectedInvestmentReturn: Rate;
+  annualIncome: Won;
+  areaM2: number;
+  marketPrice: Won;
+}
+```
+
+### 5.3 결과 타입
+
+```typescript
+interface CostBreakdown {
+  initialCosts: BuyInitialCosts;
+  annualHoldingCosts: BuyAnnualHoldingCosts;
+  disposalCosts: BuyDisposalCosts;
+  opportunityCost: Won;
+  taxBenefits: { firstHomeReduction: Won; total: Won };
+  assetGain: BuyAssetGain;
+  grandTotal: Won;
+  netTotal: Won;
+  effectiveCost: Won;  // 실질 주거비 (자산이익 반영)
+}
+
+interface CalculationResults {
+  buy: CostBreakdown;
+  jeonse: JeonseCostBreakdown;
+  monthlyRent: MonthlyRentCostBreakdown;
+  yearlyCostSeries: YearlyCostDataPoint[];
+  breakevenSeries: BreakevenDataPoint[];
+  assetProjectionSeries: AssetProjectionPoint[];
+  recommendation: ScenarioKey;
+}
+```
+
+---
+
+## 6. 스타일링 (Tailwind CSS)
+
+### 6.1 전역 스타일 (globals.css)
+
+```css
+:root {
+  --background: #F9FAFB;
+  --foreground: #191F28;
+}
+
+/* 슬라이더 커스텀 */
+input[type='range']::-webkit-slider-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #3182F6;
+  box-shadow: 0 1px 4px rgba(49, 130, 246, 0.4);
+}
+
+/* 스크롤바 숨김 (모바일 스타일) */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Safe Area 대응 */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+```
+
+### 6.2 디자인 시스템
+
+**색상**:
+- Primary: `#3182F6` (파란색)
+- Secondary: `#F59E0B` (주황색)
+- Success: `#00B493` (초록색)
+- Danger: `#EF4444` (빨간색)
+- Gray Scale: `#F9FAFB` ~ `#191F28`
+
+**타이포그래피**:
+- Font: Geist Sans (Variable Font)
+- 제목: `text-base font-bold` (16px)
+- 본문: `text-sm` (14px)
+- 캡션: `text-xs` (12px)
+- 강조: `text-2xl font-bold` (24px)
+
+**간격**:
+- 카드 간격: `space-y-3` (12px)
+- 섹션 간격: `mb-4` (16px)
+- 내부 패딩: `p-5` (20px)
+
+**라운드**:
+- 카드: `rounded-2xl` (16px)
+- 버튼: `rounded-xl` (12px)
+- 바텀시트: `rounded-t-3xl` (24px)
+
+**그림자**:
+- 카드: `shadow-sm`
+- 바텀시트: `shadow-lg`
+
+---
+
+## 7. 성능 최적화
+
+### 7.1 계산 최적화
+
+1. **메모이제이션**: Zustand selector로 필요한 상태만 구독
+2. **배치 계산**: `runAllCalculations()`에서 한 번에 처리
+3. **조건부 렌더링**: `results`가 null일 때 스켈레톤 표시
+
+### 7.2 렌더링 최적화
+
+1. **Client Component 분리**: 'use client' 지시어로 명시
+2. **Framer Motion**: `layout` prop으로 레이아웃 애니메이션 최적화
+3. **Recharts**: `ResponsiveContainer`로 반응형 차트
+
+### 7.3 번들 최적화
+
+1. **Static Export**: `output: 'export'`로 정적 HTML 생성
+2. **Tree Shaking**: ES Module 기반 import
+3. **Code Splitting**: Next.js 자동 코드 분할
+
+---
+
+## 8. 핵심 알고리즘 요약
+
+### 8.1 비용 비교 기준
+
+**매수**: `effectiveCost` (실질 주거비)
+- 총비용 - 시세상승분
+- 자산 이익을 반영한 실질 주거비용
+
+**전세/월세**: `netTotal` (순비용)
+- 총비용 - 세제혜택
+- 자산 증식 효과 없음
+
+### 8.2 순자산 비교 기준
+
+**공통 기준선**: 매수 자기자본
+- 매수: 시세 - 잔여대출
+- 전세: 초기여유금 투자 + 월절약액 적립 + 보증금 - 전세대출
+- 월세: 초기여유금 투자 + 월절약액 적립 + 보증금
+
+### 8.3 추천 알고리즘
+
+1. 순자산 최대화 기준 (명목가치)
+2. 인플레이션 시나리오별 맞춤 조언
+3. 레버리지 전략 제시
+4. 리스크 경고
+
+---
+
+## 9. 주요 특징 및 강점
+
+### 9.1 정확한 세금 계산
+- 취득세 점진 공식 (6~9억 구간)
+- 재산세/종부세 브라켓 적용
+- 양도세 비과세 조건 체크
+- 장기보유특별공제 자동 계산
+
+### 9.2 다양한 시나리오 분석
+- 인플레이션 시나리오별 비교 (저/중/고)
+- 주택가격 변동률별 손익분기 분석
+- 연도별 누적 비용 시계열
+- 순자산 변화 시뮬레이션
+
+### 9.3 레버리지 효과 분석
+- LTV 비율별 ROE 계산
+- 무대출 대비 레버리지 효과 표시
+- 인플레이션 시나리오별 레버리지 전략 제시
+
+### 9.4 모바일 최적화 UI
+- 바텀시트 기반 입력
+- 스와이프 제스처 지원
+- Framer Motion 애니메이션
+- Safe Area 대응
+
+### 9.5 실시간 계산
+- 입력 변경 시 즉시 재계산
+- LocalStorage 영속화
+- DevTools 디버깅 지원
+
+---
+
+## 10. 개선 가능 영역
+
+### 10.1 기능 확장
+- [ ] 다주택자 중과세율 적용
+- [ ] 조정대상지역 규제 반영
+- [ ] 월세 상승률 시뮬레이션
+- [ ] 전세 → 월세 전환 시나리오
+- [ ] 대출 중도상환 시뮬레이션
+
+### 10.2 UI/UX 개선
+- [ ] 차트 확대/축소 기능
+- [ ] 비교 결과 PDF 내보내기
+- [ ] 시나리오 저장/불러오기
+- [ ] 다크 모드 지원
+
+### 10.3 성능 개선
+- [ ] Web Worker로 계산 오프로드
+- [ ] Virtual Scrolling (긴 리스트)
+- [ ] 이미지 최적화 (Next.js Image)
+
+### 10.4 테스트
+- [ ] 단위 테스트 (Jest)
+- [ ] E2E 테스트 (Playwright)
+- [ ] 계산 정확도 검증
+
+---
+
+## 11. 결론
+
+이 애플리케이션은 **매수/전세/월세 비교 계산기**로서 다음과 같은 핵심 가치를 제공합니다:
+
+1. **정확한 금융 계산**: 한국 세법을 정확히 반영한 세금 계산
+2. **다차원 분석**: 인플레이션, 레버리지, 순자산 등 다각도 분석
+3. **직관적 UI**: 모바일 최적화된 바텀시트 기반 입력
+4. **실시간 피드백**: 입력 즉시 결과 업데이트
+5. **맞춤 추천**: 시나리오별 최적 선택 및 전략 제시
+
+**기술 스택**:
+- Next.js 14 (App Router, Static Export)
+- TypeScript (Strict Mode)
+- Zustand (상태 관리)
+- Recharts (차트)
+- Framer Motion (애니메이션)
+- Tailwind CSS (스타일링)
+
+**아키텍처 특징**:
+- 계층적 컴포넌트 구조
+- 순수 함수 기반 계산 로직
+- 타입 안전성 보장
+- 반응형 상태 관리
+
+이 보고서는 app 폴더의 모든 주요 파일과 로직을 분석하여 작성되었으며, 프로젝트의 전체 구조와 동작 방식을 상세히 설명합니다.

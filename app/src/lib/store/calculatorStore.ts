@@ -86,10 +86,12 @@ export const useCalculatorStore = create<CalculatorState>()(
             ...jeonseInputs,
             loanRate: params.loanInterestRate,
             expectedInvestmentReturn: params.expectedInvestmentReturn,
+            rentGrowthRate: params.rentGrowthRate,
           };
           const adjustedRent: MonthlyRentInputs = {
             ...monthlyRentInputs,
             expectedInvestmentReturn: params.expectedInvestmentReturn,
+            rentGrowthRate: params.rentGrowthRate,
           };
 
           const results = runAllCalculations(adjustedBuy, adjustedJeonse, adjustedRent);
