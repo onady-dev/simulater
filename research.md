@@ -1172,7 +1172,41 @@ input[type='range']::-webkit-slider-thumb {
 
 ---
 
-## 11. 결론
+## 11. 주요 변경사항 (2026-03-07)
+
+### 11.1 입력 구조 변경
+- `annualIncome` 제거 → `availableCash` (현재 보유 자산)으로 교체
+  - 3개 입력 타입 모두 적용: `BuyInputs`, `JeonseInputs`, `MonthlyRentInputs`
+  - 세금 공제 계산(`calcJeonseLoanDeduction`, `calcRentTaxCredit`) 제거 (annualIncome 의존성 제거)
+  - `generateAssetProjectionSeries` 초기 여유금 계산 기준이 `availableCash`로 변경
+
+### 11.2 사용자 입력 우선순위 플래그 시스템
+- 입력 타입에 optional 플래그 추가:
+  - `BuyInputs.userSetPriceChangeRate?`, `userSetLoanRate?`, `userSetInvestmentReturn?`
+  - `JeonseInputs.userSetLoanRate?`, `userSetInvestmentReturn?`
+  - `MonthlyRentInputs.userSetInvestmentReturn?`
+- `updateXInputs()` 액션이 변경된 필드에 자동으로 플래그 `true` 설정
+- `calculate()`에서 플래그가 `true`이면 사용자 값 유지, `false`이면 인플레이션 기본값 적용
+
+### 11.3 스토어 간소화
+- `scenarioComparisons` 상태 제거
+- `setInflationScenario` 액션 제거 (inflation scenario는 `medium` 고정)
+- `compareInflationScenarios` 함수 호출 제거
+
+### 11.4 UI 변경
+- `ScenarioComparisonChart` 제거
+- `LeverageSimulator` 제거
+- `ScenarioSwipeCards` + `WinnerBanner` → `MonthlyCostSummary` (3열 카드)로 교체
+- `InflationScenarioSelector` → 적용값 간단 표시 (뱃지)로 교체
+- `AutoRecommendation` 간소화 (추천 시나리오 + 순자산 차이만 표시)
+- 연간 주택가격 변동률 슬라이더: `AdvancedSheet` → `PriceStepCard` 메인 영역으로 이동
+- 기대 투자수익률에 ⓘ 아이콘 추가 (탭 시 설명 팝업)
+- `AdvancedSheet` 슬라이더: 사용자 직접 설정값에 "직접입력" 뱃지 표시
+- `AssetProjectionChart` Y축 자동 조정으로 시나리오 간 차이 시각화 개선
+
+---
+
+## 12. 결론
 
 이 애플리케이션은 **매수/전세/월세 비교 계산기**로서 다음과 같은 핵심 가치를 제공합니다:
 

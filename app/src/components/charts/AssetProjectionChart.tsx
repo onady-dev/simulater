@@ -45,63 +45,70 @@ export function AssetProjectionChart() {
 
   const data: AssetProjectionPoint[] = results.assetProjectionSeries;
 
+  // Y축 범위: 데이터 최솟값~최댓값에 10% 여백 추가
+  const allValues = data.flatMap((d) => [d.buyNetAsset, d.jeonseNetAsset, d.monthlyRentNetAsset]);
+  const dataMin = Math.min(...allValues);
+  const dataMax = Math.max(...allValues);
+  const padding = (dataMax - dataMin) * 0.15 || 100_000_000;
+  const yMin = Math.floor((dataMin - padding) / 100_000_000) * 100_000_000;
+  const yMax = Math.ceil((dataMax + padding) / 100_000_000) * 100_000_000;
+
   return (
-    <div className="px-4">
-      <div className="bg-white rounded-3xl p-5 shadow-sm">
-        <h3 className="text-base font-bold text-gray-900">순자산 변화 시뮬레이션</h3>
-        <p className="text-xs text-gray-400 mt-0.5">
-          투자수익률 {(investmentRate * 100).toFixed(0)}% 가정 · 초기 보유현금 = 매수 자기자본 기준
-        </p>
+    <div className="bg-white rounded-3xl p-5 shadow-sm">
+      <h3 className="text-base font-bold text-gray-900">순자산 변화 시뮬레이션</h3>
+      <p className="text-xs text-gray-400 mt-0.5">
+        투자수익률 {(investmentRate * 100).toFixed(0)}% 가정 · 보유 자산 기준
+      </p>
 
-        <div className="mt-4 h-56">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
-              <XAxis
-                dataKey="year"
-                tickFormatter={(v: number) => `${v}년`}
-                tick={{ fontSize: 11, fill: '#9CA3AF' }}
-              />
-              <YAxis
-                tickFormatter={(v: number) => `${(v / 100_000_000).toFixed(1)}억`}
-                tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                width={42}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <ReferenceLine x={yearsToHold} stroke="#D1D5DB" strokeDasharray="4 2" />
-              <Line
-                type="monotone"
-                dataKey="buyNetAsset"
-                stroke="#3182F6"
-                name="매수"
-                strokeWidth={2.5}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="jeonseNetAsset"
-                stroke="#F59E0B"
-                name="전세"
-                strokeWidth={2.5}
-                dot={false}
-              />
-              <Line
-                type="monotone"
-                dataKey="monthlyRentNetAsset"
-                stroke="#00B493"
-                name="월세"
-                strokeWidth={2.5}
-                dot={false}
-              />
-              <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-
-        <p className="text-xs text-gray-400 mt-3">
-          * 실제 자산은 투자수익률·집값 변동에 따라 크게 달라질 수 있습니다
-        </p>
+      <div className="mt-4 h-56">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
+            <XAxis
+              dataKey="year"
+              tickFormatter={(v: number) => `${v}년`}
+              tick={{ fontSize: 11, fill: '#9CA3AF' }}
+            />
+            <YAxis
+              tickFormatter={(v: number) => `${(v / 100_000_000).toFixed(0)}억`}
+              tick={{ fontSize: 11, fill: '#9CA3AF' }}
+              width={42}
+              domain={[yMin, yMax]}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <ReferenceLine x={yearsToHold} stroke="#D1D5DB" strokeDasharray="4 2" />
+            <Line
+              type="monotone"
+              dataKey="buyNetAsset"
+              stroke="#3182F6"
+              name="매수"
+              strokeWidth={2.5}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="jeonseNetAsset"
+              stroke="#F59E0B"
+              name="전세"
+              strokeWidth={2.5}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="monthlyRentNetAsset"
+              stroke="#00B493"
+              name="월세"
+              strokeWidth={2.5}
+              dot={false}
+            />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
+
+      <p className="text-xs text-gray-400 mt-3">
+        * 실제 자산은 투자수익률·집값 변동에 따라 크게 달라질 수 있습니다
+      </p>
     </div>
   );
 }

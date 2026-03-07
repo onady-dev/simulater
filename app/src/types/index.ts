@@ -31,10 +31,14 @@ export interface BuyInputs {
   loanType: LoanRepaymentType;
   yearsToHold: Years;
   annualPriceChangeRate: Rate;
-  annualIncome: Won;
+  availableCash: Won;       // 현재 보유 자산 (가용 가능 현금)
   isFirstHomeBuyer: boolean;
   isRegulatedZone: boolean;
   expectedInvestmentReturn: Rate; // 자기자본 기회비용 계산용 투자수익률
+  // 사용자 직접 입력 여부 플래그
+  userSetPriceChangeRate?: boolean;
+  userSetLoanRate?: boolean;
+  userSetInvestmentReturn?: boolean;
 }
 
 export interface JeonseInputs {
@@ -44,8 +48,11 @@ export interface JeonseInputs {
   insuranceProvider: JeonseInsuranceProvider;
   yearsToHold: Years;
   expectedInvestmentReturn: Rate;
-  annualIncome: Won;
+  availableCash: Won;       // 현재 보유 자산 (가용 가능 현금)
   rentGrowthRate?: Rate;
+  // 사용자 직접 입력 여부 플래그
+  userSetLoanRate?: boolean;
+  userSetInvestmentReturn?: boolean;
 }
 
 export interface MonthlyRentInputs {
@@ -53,10 +60,12 @@ export interface MonthlyRentInputs {
   monthlyRent: Won;
   yearsToHold: Years;
   expectedInvestmentReturn: Rate;
-  annualIncome: Won;
+  availableCash: Won;       // 현재 보유 자산 (가용 가능 현금)
   areaM2: number;
   rentGrowthRate?: Rate;
   marketPrice: Won;
+  // 사용자 직접 입력 여부 플래그
+  userSetInvestmentReturn?: boolean;
 }
 
 // ─── 결과 타입 ───────────────────────────────────────────────────────────────
@@ -190,17 +199,6 @@ export interface InflationParameters {
   rentGrowthRate: Rate;
   loanInterestRate: Rate;
   expectedInvestmentReturn: Rate;
-}
-
-export interface ScenarioComparison {
-  scenario: InflationScenario;
-  parameters: InflationParameters;
-  results: CalculationResults;
-  realAssetValue: {
-    buy: Won;
-    jeonse: Won;
-    monthlyRent: Won;
-  };
 }
 
 export interface Recommendation {

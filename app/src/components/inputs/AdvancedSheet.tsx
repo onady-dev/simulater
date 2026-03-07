@@ -26,10 +26,9 @@ const TITLE_COLOR: Record<ScenarioKey, string> = {
 export function AdvancedSheet({ scenario, onClose }: Props) {
   const buyInputs = useCalculatorStore((s) => s.buyInputs);
   const jeonseInputs = useCalculatorStore((s) => s.jeonseInputs);
-  // const monthlyRentInputs = useCalculatorStore((s) => s.monthlyRentInputs);
   const updateBuyInputs = useCalculatorStore((s) => s.updateBuyInputs);
   const updateJeonseInputs = useCalculatorStore((s) => s.updateJeonseInputs);
-  // const updateMonthlyRentInputs = useCalculatorStore((s) => s.updateMonthlyRentInputs);
+  const resetAll = useCalculatorStore((s) => s.resetAll);
 
   return (
     <AnimatePresence>
@@ -82,15 +81,7 @@ export function AdvancedSheet({ scenario, onClose }: Props) {
                     step={0.001}
                     onChange={(v) => updateBuyInputs({ loanRate: v })}
                     formatValue={(v) => formatRate(v)}
-                  />
-                  <SliderWithLabel
-                    label="연간 주택가격 변동률"
-                    value={buyInputs.annualPriceChangeRate}
-                    min={-0.1}
-                    max={0.2}
-                    step={0.005}
-                    onChange={(v) => updateBuyInputs({ annualPriceChangeRate: v })}
-                    formatValue={(v) => formatRate(v)}
+                    userSet={buyInputs.userSetLoanRate}
                   />
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-gray-700">주택 수</p>
@@ -152,6 +143,13 @@ export function AdvancedSheet({ scenario, onClose }: Props) {
                     </button>
                   </div>
 
+                  {/* 시나리오 기본값으로 초기화 */}
+                  <button
+                    onClick={() => { resetAll(); onClose(); }}
+                    className="w-full py-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 mt-2"
+                  >
+                    시나리오 기본값으로 초기화
+                  </button>
                 </>
               )}
 
@@ -175,6 +173,7 @@ export function AdvancedSheet({ scenario, onClose }: Props) {
                     step={0.001}
                     onChange={(v) => updateJeonseInputs({ loanRate: v })}
                     formatValue={(v) => formatRate(v)}
+                    userSet={jeonseInputs.userSetLoanRate}
                   />
                   <div className="space-y-2">
                     <p className="text-sm font-medium text-gray-700">전세보증보험</p>

@@ -73,19 +73,20 @@ export function convertJeonseToMonthlyRent(
 /**
  * 순자산 변화 시뮬레이션 시계열 생성
  *
- * 공통 기준: 매수 자기자본(purchasePrice - loanAmount)을 초기 보유 현금으로 설정.
+ * 공통 기준: 사용자의 availableCash(현재 보유 자산)를 초기 보유 현금으로 설정.
  * 전세·월세는 (초기여유금 + 매달 매수 대비 절약액)을 expectedInvestmentReturn으로 운용.
+ * 월세 인상률은 2년마다 재계약 시 법정 상한(5%) 적용.
  */
 export function generateAssetProjectionSeries(
   buyInputs: BuyInputs,
   jeonseInputs: JeonseInputs,
   monthlyRentInputs: MonthlyRentInputs,
 ): AssetProjectionPoint[] {
-  const { purchasePrice, loanAmount, loanRate, loanType, annualPriceChangeRate, yearsToHold } =
+  const { purchasePrice, loanAmount, loanRate, loanType, annualPriceChangeRate, yearsToHold, availableCash } =
     buyInputs;
   const r = jeonseInputs.expectedInvestmentReturn;
-  const rentGrowthRate = monthlyRentInputs.rentGrowthRate || 0;
-  const jeonseGrowthRate = jeonseInputs.rentGrowthRate || 0;
+  const rentGrowthRate = monthlyRentInputs.rentGrowthRate ?? 0;
+  const jeonseGrowthRate = jeonseInputs.rentGrowthRate ?? 0;
   const LEGAL_CAP = 0.05;
   const CONTRACT_PERIOD = 2;
 
@@ -99,11 +100,10 @@ export function generateAssetProjectionSeries(
   // 전세 월 현금지출 (이자만 — 만기일시상환 가정)
   const jeonseMonthlyOutflow = (jeonseInputs.loanAmount * jeonseInputs.loanRate) / 12;
 
-  // 초기 여유금: 매수 자기자본에서 각 시나리오 보증금 자부담 차감
-  const buyEquity = purchasePrice - loanAmount;
+  // 초기 여유금: 사용자 입력 availableCash에서 각 시나리오 자부담 차감
   const jeonseOwnDeposit = Math.max(0, jeonseInputs.depositAmount - jeonseInputs.loanAmount);
-  const jeonseInitialInvestable = Math.max(0, buyEquity - jeonseOwnDeposit);
-  const rentInitialInvestable = Math.max(0, buyEquity - monthlyRentInputs.depositAmount);
+  const jeonseInitialInvestable = Math.max(0, availableCash - jeonseOwnDeposit);
+  const rentInitialInvestable = Math.max(0, availableCash - monthlyRentInputs.depositAmount);
 
   // 월 절약액 (음수 = 해당 시나리오가 더 비쌈)
   const jeonseMonthlySaving = buyMonthlyOutflow - jeonseMonthlyOutflow;
@@ -123,7 +123,7 @@ export function generateAssetProjectionSeries(
     ).remainingPrincipal;
     const buyNetAsset = salePrice - remainingLoan;
 
-    // 연금 미래가치 계수
+    // 연금 미래가치 계수 (월복리)
     const fvFactor = r > 0 ? (Math.pow(1 + r / 12, months) - 1) / (r / 12) : months;
 
     // 전세 보증금 (2년마다 재계약, 법정 상한 적용)
@@ -133,7 +133,7 @@ export function generateAssetProjectionSeries(
       const increaseRate = Math.min(jeonseGrowthRate, LEGAL_CAP);
       currentJeonseDeposit = jeonseInputs.depositAmount * Math.pow(1 + increaseRate, jeonseRenewalCount);
     }
-    
+
     // 전세 순자산
     const fvInitialJeonse = jeonseInitialInvestable * Math.pow(1 + r, year);
     const fvSavingJeonse = jeonseMonthlySaving * fvFactor;
@@ -141,14 +141,14 @@ export function generateAssetProjectionSeries(
       fvInitialJeonse + fvSavingJeonse + currentJeonseDeposit - jeonseInputs.loanAmount,
     );
 
-    // 월세 월 현금지출 (2년마다 재계약, 법정 상한 적용)
+    // 월세: 2년마다 재계약 시 법정 상한 적용 인상률
     let currentMonthlyRent = monthlyRentInputs.monthlyRent;
     const rentRenewalCount = Math.floor((year - 1) / CONTRACT_PERIOD);
     if (rentRenewalCount > 0 && rentGrowthRate > 0) {
       const increaseRate = Math.min(rentGrowthRate, LEGAL_CAP);
       currentMonthlyRent = monthlyRentInputs.monthlyRent * Math.pow(1 + increaseRate, rentRenewalCount);
     }
-    
+
     // 월세 순자산 (연도별 월세 변화 반영)
     const rentMonthlySaving = buyMonthlyOutflow - currentMonthlyRent;
     const fvInitialRent = rentInitialInvestable * Math.pow(1 + r, year);

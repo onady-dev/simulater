@@ -7,7 +7,6 @@ import type {
   CalculationResults,
   ScenarioKey,
   InflationScenario,
-  ScenarioComparison,
   Recommendation,
 } from '@/types';
 import {
@@ -16,7 +15,7 @@ import {
   DEFAULT_MONTHLY_RENT_INPUTS,
 } from '@/lib/constants/defaults';
 import { runAllCalculations } from '@/lib/calculations';
-import { getInflationParameters, compareInflationScenarios } from '@/lib/calculations/inflation';
+import { getInflationParameters } from '@/lib/calculations/inflation';
 import { generateRecommendation } from '@/lib/calculations/recommendation';
 
 interface CalculatorState {
@@ -26,13 +25,11 @@ interface CalculatorState {
   results: CalculationResults | null;
   activeTab: ScenarioKey;
   inflationScenario: InflationScenario;
-  scenarioComparisons: ScenarioComparison[] | null;
   recommendation: Recommendation | null;
 
   updateBuyInputs: (partial: Partial<BuyInputs>) => void;
   updateJeonseInputs: (partial: Partial<JeonseInputs>) => void;
   updateMonthlyRentInputs: (partial: Partial<MonthlyRentInputs>) => void;
-  setInflationScenario: (scenario: InflationScenario) => void;
   calculate: () => void;
   resetAll: () => void;
   setActiveTab: (tab: ScenarioKey) => void;
@@ -48,57 +45,78 @@ export const useCalculatorStore = create<CalculatorState>()(
         results: null,
         activeTab: 'buy' as ScenarioKey,
         inflationScenario: 'medium' as InflationScenario,
-        scenarioComparisons: null,
         recommendation: null,
 
         updateBuyInputs: (partial) => {
-          set((s) => ({ buyInputs: { ...s.buyInputs, ...partial } }));
+          // 사용자가 직접 변경한 필드에 플래그 설정
+          const flags: Partial<BuyInputs> = {};
+          if ('annualPriceChangeRate' in partial) flags.userSetPriceChangeRate = true;
+          if ('loanRate' in partial) flags.userSetLoanRate = true;
+          if ('expectedInvestmentReturn' in partial) flags.userSetInvestmentReturn = true;
+
+          set((s) => ({ buyInputs: { ...s.buyInputs, ...partial, ...flags } }));
           get().calculate();
         },
 
         updateJeonseInputs: (partial) => {
-          set((s) => ({ jeonseInputs: { ...s.jeonseInputs, ...partial } }));
+          const flags: Partial<JeonseInputs> = {};
+          if ('loanRate' in partial) flags.userSetLoanRate = true;
+          if ('expectedInvestmentReturn' in partial) flags.userSetInvestmentReturn = true;
+
+          set((s) => ({ jeonseInputs: { ...s.jeonseInputs, ...partial, ...flags } }));
           get().calculate();
         },
 
         updateMonthlyRentInputs: (partial) => {
-          set((s) => ({ monthlyRentInputs: { ...s.monthlyRentInputs, ...partial } }));
-          get().calculate();
-        },
+          const flags: Partial<MonthlyRentInputs> = {};
+          if ('expectedInvestmentReturn' in partial) flags.userSetInvestmentReturn = true;
 
-        setInflationScenario: (scenario) => {
-          set({ inflationScenario: scenario });
+          set((s) => ({ monthlyRentInputs: { ...s.monthlyRentInputs, ...partial, ...flags } }));
           get().calculate();
         },
 
         calculate: () => {
           const { buyInputs, jeonseInputs, monthlyRentInputs, inflationScenario } = get();
 
-          // 인플레이션 시나리오 파라미터 적용
+          // 인플레이션 시나리오 파라미터 적용 (사용자 직접 입력 시 해당 값 우선)
           const params = getInflationParameters(inflationScenario);
+
           const adjustedBuy: BuyInputs = {
             ...buyInputs,
-            annualPriceChangeRate: params.housingPriceGrowth,
-            loanRate: params.loanInterestRate,
-            expectedInvestmentReturn: params.expectedInvestmentReturn,
+            annualPriceChangeRate: buyInputs.userSetPriceChangeRate
+              ? buyInputs.annualPriceChangeRate
+              : params.housingPriceGrowth,
+            loanRate: buyInputs.userSetLoanRate
+              ? buyInputs.loanRate
+              : params.loanInterestRate,
+            expectedInvestmentReturn: buyInputs.userSetInvestmentReturn
+              ? buyInputs.expectedInvestmentReturn
+              : params.expectedInvestmentReturn,
           };
+
           const adjustedJeonse: JeonseInputs = {
             ...jeonseInputs,
-            loanRate: params.loanInterestRate,
-            expectedInvestmentReturn: params.expectedInvestmentReturn,
+            loanRate: jeonseInputs.userSetLoanRate
+              ? jeonseInputs.loanRate
+              : params.loanInterestRate,
+            expectedInvestmentReturn: jeonseInputs.userSetInvestmentReturn
+              ? jeonseInputs.expectedInvestmentReturn
+              : params.expectedInvestmentReturn,
             rentGrowthRate: params.rentGrowthRate,
           };
+
           const adjustedRent: MonthlyRentInputs = {
             ...monthlyRentInputs,
-            expectedInvestmentReturn: params.expectedInvestmentReturn,
+            expectedInvestmentReturn: monthlyRentInputs.userSetInvestmentReturn
+              ? monthlyRentInputs.expectedInvestmentReturn
+              : params.expectedInvestmentReturn,
             rentGrowthRate: params.rentGrowthRate,
           };
 
           const results = runAllCalculations(adjustedBuy, adjustedJeonse, adjustedRent);
-          const scenarioComparisons = compareInflationScenarios(buyInputs, jeonseInputs, monthlyRentInputs);
           const recommendation = generateRecommendation(inflationScenario, results, adjustedBuy);
 
-          set({ results, scenarioComparisons, recommendation });
+          set({ results, recommendation });
         },
 
         resetAll: () => {
