@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SliderWithLabel } from './SliderWithLabel';
 import { formatRate, formatWon } from '@/lib/utils/format';
-import type { HomeOwnerCount, LoanRepaymentType, JeonseInsuranceProvider, ScenarioKey } from '@/types';
+import type { ScenarioKey } from '@/types';
 
 interface Props {
   scenario: ScenarioKey | null;
@@ -28,7 +28,6 @@ export function AdvancedSheet({ scenario, onClose }: Props) {
   const jeonseInputs = useCalculatorStore((s) => s.jeonseInputs);
   const updateBuyInputs = useCalculatorStore((s) => s.updateBuyInputs);
   const updateJeonseInputs = useCalculatorStore((s) => s.updateJeonseInputs);
-  const resetAll = useCalculatorStore((s) => s.resetAll);
 
   return (
     <AnimatePresence>
