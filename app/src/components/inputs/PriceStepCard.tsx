@@ -4,9 +4,7 @@ import { useState } from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { NumberPadInput } from './NumberPadInput';
 import { SliderWithLabel } from './SliderWithLabel';
-import { AdvancedSheet } from './AdvancedSheet';
 import { formatRate } from '@/lib/utils/format';
-import type { ScenarioKey } from '@/types';
 
 const BUY_PRICE_PRESETS = [
   { label: '3억', value: 300_000_000 },
@@ -44,8 +42,8 @@ const AVAILABLE_CASH_PRESETS = [
 ];
 
 export function PriceStepCard() {
-  const [openSheet, setOpenSheet] = useState<ScenarioKey | null>(null);
-  const [showInvestmentInfo, setShowInvestmentInfo] = useState(false);
+  const [showBuyDetails, setShowBuyDetails] = useState(false);
+  const [showJeonseDetails, setShowJeonseDetails] = useState(false);
 
   const buyInputs = useCalculatorStore((s) => s.buyInputs);
   const jeonseInputs = useCalculatorStore((s) => s.jeonseInputs);
@@ -55,19 +53,15 @@ export function PriceStepCard() {
   const updateMonthlyRentInputs = useCalculatorStore((s) => s.updateMonthlyRentInputs);
 
   const syncAvailableCash = (v: number) => {
-    updateBuyInputs({ availableCash: v });
-    updateJeonseInputs({ availableCash: v });
+    updateBuyInputs({ 
+      availableCash: v,
+      loanAmount: Math.max(0, buyInputs.purchasePrice - v),
+    });
+    updateJeonseInputs({ 
+      availableCash: v,
+      loanAmount: Math.max(0, jeonseInputs.depositAmount - v),
+    });
     updateMonthlyRentInputs({ availableCash: v });
-  };
-
-  const syncInvestmentReturn = (v: number) => {
-    updateBuyInputs({ expectedInvestmentReturn: v });
-    updateJeonseInputs({ expectedInvestmentReturn: v });
-    updateMonthlyRentInputs({ expectedInvestmentReturn: v });
-  };
-
-  const syncPriceChangeRate = (v: number) => {
-    updateBuyInputs({ annualPriceChangeRate: v });
   };
 
   return (
@@ -75,41 +69,226 @@ export function PriceStepCard() {
       <div className="space-y-3">
         <h2 className="text-base font-bold text-gray-900 px-1">주택 정보 입력</h2>
 
-        <NumberPadInput
-          label="매수가격"
-          value={buyInputs.purchasePrice}
-          onChange={(v) => {
-            updateBuyInputs({
-              purchasePrice: v,
-              loanAmount: Math.floor(v * 0.6),
-            });
-          }}
-          unit="억원"
-          presets={BUY_PRICE_PRESETS}
-          min={100_000_000}
-          max={3_000_000_000}
-          step={10_000_000}
-          description="매수 시나리오"
-          onSettingsClick={() => setOpenSheet('buy')}
-        />
+        {/* 현재 보유 자산 */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-base font-bold text-gray-900">현재 보유 자산</h3>
+            <span className="text-2xl font-bold text-blue-500">
+              {(buyInputs.availableCash / 100_000_000).toFixed(1)}억원
+            </span>
+          </div>
 
-        <NumberPadInput
-          label="전세보증금"
-          value={jeonseInputs.depositAmount}
-          onChange={(v) => {
-            updateJeonseInputs({
-              depositAmount: v,
-              loanAmount: Math.floor(v * 0.4),
-            });
-          }}
-          unit="억원"
-          presets={JEONSE_PRESETS}
-          min={50_000_000}
-          max={2_000_000_000}
-          step={10_000_000}
-          description="전세 시나리오"
-          onSettingsClick={() => setOpenSheet('jeonse')}
-        />
+          <input
+            type="range"
+            min={0}
+            max={2_000_000_000}
+            step={10_000_000}
+            value={buyInputs.availableCash}
+            onChange={(e) => syncAvailableCash(Number(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>0억</span>
+            <span>20억</span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {AVAILABLE_CASH_PRESETS.map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={() => syncAvailableCash(value)}
+                className={`py-2 rounded-xl text-xs font-medium transition-colors ${
+                  buyInputs.availableCash === value
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-gray-400">가용 가능 현금 (순자산 비교 기준)</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-base font-bold text-gray-900">매수가격</h3>
+            <span className="text-2xl font-bold text-blue-500">
+              {(buyInputs.purchasePrice / 100_000_000).toFixed(1)}억원
+            </span>
+          </div>
+
+          <input
+            type="range"
+            min={100_000_000}
+            max={3_000_000_000}
+            step={10_000_000}
+            value={buyInputs.purchasePrice}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              updateBuyInputs({
+                purchasePrice: v,
+                loanAmount: Math.max(0, v - buyInputs.availableCash),
+              });
+            }}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>1억</span>
+            <span>30억</span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {BUY_PRICE_PRESETS.map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={() => {
+                  updateBuyInputs({
+                    purchasePrice: value,
+                    loanAmount: Math.max(0, value - buyInputs.availableCash),
+                  });
+                }}
+                className={`py-2 rounded-xl text-xs font-medium transition-colors ${
+                  buyInputs.purchasePrice === value
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowBuyDetails(!showBuyDetails)}
+            className="w-full py-2 text-xs text-blue-600 font-medium flex items-center justify-center gap-1"
+          >
+            {showBuyDetails ? '대출 설정 접기' : '대출 설정 펼치기'}
+            <svg
+              className={`w-4 h-4 transition-transform ${showBuyDetails ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showBuyDetails && (
+            <>
+              <SliderWithLabel
+                label="주택담보대출 금액"
+                value={buyInputs.loanAmount}
+                min={0}
+                max={buyInputs.purchasePrice}
+                step={10_000_000}
+                onChange={(v) => updateBuyInputs({ loanAmount: v })}
+                formatValue={(v) => `${(v / 100_000_000).toFixed(1)}억원`}
+              />
+              <SliderWithLabel
+                label="대출 금리"
+                value={buyInputs.loanRate}
+                min={0.01}
+                max={0.1}
+                step={0.001}
+                onChange={(v) => updateBuyInputs({ loanRate: v })}
+                formatValue={(v) => formatRate(v)}
+                userSet={buyInputs.userSetLoanRate}
+              />
+            </>
+          )}
+          <p className="text-xs text-gray-400">매수 시나리오</p>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-base font-bold text-gray-900">전세보증금</h3>
+            <span className="text-2xl font-bold text-amber-500">
+              {(jeonseInputs.depositAmount / 100_000_000).toFixed(1)}억원
+            </span>
+          </div>
+
+          <input
+            type="range"
+            min={50_000_000}
+            max={2_000_000_000}
+            step={10_000_000}
+            value={jeonseInputs.depositAmount}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              updateJeonseInputs({
+                depositAmount: v,
+                loanAmount: Math.max(0, v - buyInputs.availableCash),
+              });
+            }}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-500"
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>0.5억</span>
+            <span>20억</span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {JEONSE_PRESETS.map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={() => {
+                  updateJeonseInputs({
+                    depositAmount: value,
+                    loanAmount: Math.max(0, value - buyInputs.availableCash),
+                  });
+                }}
+                className={`py-2 rounded-xl text-xs font-medium transition-colors ${
+                  jeonseInputs.depositAmount === value
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-gray-100 text-gray-600'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowJeonseDetails(!showJeonseDetails)}
+            className="w-full py-2 text-xs text-amber-600 font-medium flex items-center justify-center gap-1"
+          >
+            {showJeonseDetails ? '대출 설정 접기' : '대출 설정 펼치기'}
+            <svg
+              className={`w-4 h-4 transition-transform ${showJeonseDetails ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showJeonseDetails && (
+            <>
+              <SliderWithLabel
+                label="전세대출 금액"
+                value={jeonseInputs.loanAmount}
+                min={0}
+                max={jeonseInputs.depositAmount}
+                step={10_000_000}
+                onChange={(v) => updateJeonseInputs({ loanAmount: v })}
+                formatValue={(v) => `${(v / 100_000_000).toFixed(1)}억원`}
+              />
+              <SliderWithLabel
+                label="전세대출 금리"
+                value={jeonseInputs.loanRate}
+                min={0.01}
+                max={0.1}
+                step={0.001}
+                onChange={(v) => updateJeonseInputs({ loanRate: v })}
+                formatValue={(v) => formatRate(v)}
+                userSet={jeonseInputs.userSetLoanRate}
+              />
+            </>
+          )}
+          <p className="text-xs text-gray-400">전세 시나리오</p>
+        </div>
 
         <div className="grid grid-cols-2 gap-3 items-stretch">
           <NumberPadInput
@@ -123,6 +302,7 @@ export function PriceStepCard() {
             step={1_000_000}
             description="월세 시나리오"
             className="h-full"
+            color="emerald"
           />
           <NumberPadInput
             label="월세"
@@ -135,57 +315,10 @@ export function PriceStepCard() {
             step={50_000}
             description="월세 시나리오"
             className="h-full"
+            color="emerald"
           />
-        </div>
-
-        {/* 공통 설정 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 px-5 py-4 space-y-5">
-          <NumberPadInput
-            label="현재 보유 자산"
-            value={buyInputs.availableCash}
-            onChange={syncAvailableCash}
-            unit="억원"
-            presets={AVAILABLE_CASH_PRESETS}
-            min={0}
-            max={2_000_000_000}
-            step={10_000_000}
-            description="가용 가능 현금 (순자산 비교 기준)"
-          />
-
-          <SliderWithLabel
-            label="연간 주택가격 변동률"
-            value={buyInputs.annualPriceChangeRate}
-            min={-0.1}
-            max={0.2}
-            step={0.005}
-            onChange={syncPriceChangeRate}
-            formatValue={(v) => formatRate(v)}
-            userSet={buyInputs.userSetPriceChangeRate}
-          />
-
-          <div>
-            <SliderWithLabel
-              label="기대 투자수익률"
-              value={buyInputs.expectedInvestmentReturn}
-              min={0.01}
-              max={0.15}
-              step={0.005}
-              onChange={syncInvestmentReturn}
-              formatValue={formatRate}
-              userSet={buyInputs.userSetInvestmentReturn}
-              onInfoClick={() => setShowInvestmentInfo((v) => !v)}
-            />
-            {showInvestmentInfo && (
-              <div className="mt-2 p-3 bg-blue-50 rounded-xl text-xs text-blue-700 leading-relaxed">
-                전세·월세로 절약한 여유 자금을 운용할 때 기대하는 연간 수익률입니다.
-                예금(3~4%), 주식 ETF(7~10%) 등 투자 방식에 따라 달라집니다.
-              </div>
-            )}
-          </div>
         </div>
       </div>
-
-      <AdvancedSheet scenario={openSheet} onClose={() => setOpenSheet(null)} />
     </>
   );
 }

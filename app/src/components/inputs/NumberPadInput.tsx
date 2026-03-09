@@ -18,6 +18,7 @@ interface Props {
   description?: string;
   className?: string;
   onSettingsClick?: () => void;
+  color?: 'blue' | 'amber' | 'emerald';
 }
 
 export function NumberPadInput({
@@ -32,9 +33,33 @@ export function NumberPadInput({
   description,
   className,
   onSettingsClick,
+  color = 'blue',
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [draft, setDraft] = useState(value);
+
+  const colorClasses = {
+    blue: {
+      text: 'text-blue-500',
+      bg: 'bg-blue-500',
+      bgHover: 'active:bg-blue-600',
+      accent: 'accent-blue-500',
+    },
+    amber: {
+      text: 'text-amber-500',
+      bg: 'bg-amber-500',
+      bgHover: 'active:bg-amber-600',
+      accent: 'accent-amber-500',
+    },
+    emerald: {
+      text: 'text-emerald-500',
+      bg: 'bg-emerald-500',
+      bgHover: 'active:bg-emerald-600',
+      accent: 'accent-emerald-500',
+    },
+  };
+
+  const colors = colorClasses[color];
 
   const openSheet = () => {
     setDraft(value);
@@ -111,7 +136,7 @@ export function NumberPadInput({
             >
               <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto" />
               <p className="text-center text-base font-semibold text-gray-800">{label}</p>
-              <p className="text-center text-4xl font-bold text-blue-500">
+              <p className={`text-center text-4xl font-bold ${colors.text}`}>
                 {formatWonCompact(draft)}{' '}
                 <span className="text-xl text-gray-400">{unit}</span>
               </p>
@@ -129,7 +154,7 @@ export function NumberPadInput({
                 step={step}
                 value={draft}
                 onChange={(e) => setDraft(Number(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer ${colors.accent}`}
               />
               <div className="flex justify-between text-xs text-gray-400">
                 <span>{formatWonCompact(min)} {unit}</span>
@@ -138,7 +163,7 @@ export function NumberPadInput({
 
               <button
                 onClick={confirm}
-                className="w-full py-4 bg-blue-500 text-white rounded-2xl text-lg font-bold active:bg-blue-600 transition-colors"
+                className={`w-full py-4 ${colors.bg} text-white rounded-2xl text-lg font-bold ${colors.bgHover} transition-colors`}
               >
                 확인
               </button>

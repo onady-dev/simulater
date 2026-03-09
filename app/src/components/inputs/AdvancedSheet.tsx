@@ -83,73 +83,6 @@ export function AdvancedSheet({ scenario, onClose }: Props) {
                     formatValue={(v) => formatRate(v)}
                     userSet={buyInputs.userSetLoanRate}
                   />
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700">주택 수</p>
-                    <div className="flex gap-2">
-                      {([1, 2, 3] as HomeOwnerCount[]).map((n) => (
-                        <button
-                          key={n}
-                          onClick={() => updateBuyInputs({ numHomes: n })}
-                          className={`flex-1 py-2 rounded-xl text-sm font-medium transition-colors ${
-                            buyInputs.numHomes === n
-                              ? 'bg-blue-500 text-white'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {n === 3 ? '3주택+' : `${n}주택`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700">상환 방식</p>
-                    <div className="flex flex-col gap-2">
-                      {(
-                        [
-                          { key: 'equal_payment', label: '원리금균등상환' },
-                          { key: 'equal_principal', label: '원금균등상환' },
-                          { key: 'bullet', label: '만기일시상환' },
-                        ] as { key: LoanRepaymentType; label: string }[]
-                      ).map(({ key, label }) => (
-                        <button
-                          key={key}
-                          onClick={() => updateBuyInputs({ loanType: key })}
-                          className={`py-3 rounded-xl text-sm font-medium transition-colors ${
-                            buyInputs.loanType === key
-                              ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                              : 'bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-700">생애최초 주택 구입</span>
-                    <button
-                      onClick={() =>
-                        updateBuyInputs({ isFirstHomeBuyer: !buyInputs.isFirstHomeBuyer })
-                      }
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        buyInputs.isFirstHomeBuyer ? 'bg-blue-500' : 'bg-gray-300'
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${
-                          buyInputs.isFirstHomeBuyer ? 'translate-x-7' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* 시나리오 기본값으로 초기화 */}
-                  <button
-                    onClick={() => { resetAll(); onClose(); }}
-                    className="w-full py-3 rounded-xl text-sm font-medium bg-gray-100 text-gray-600 mt-2"
-                  >
-                    시나리오 기본값으로 초기화
-                  </button>
                 </>
               )}
 
@@ -175,31 +108,6 @@ export function AdvancedSheet({ scenario, onClose }: Props) {
                     formatValue={(v) => formatRate(v)}
                     userSet={jeonseInputs.userSetLoanRate}
                   />
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-gray-700">전세보증보험</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(
-                        [
-                          { key: 'none', label: '가입 없음' },
-                          { key: 'hf', label: 'HF (0.04~0.18%)' },
-                          { key: 'hug', label: 'HUG (0.11~0.21%)' },
-                          { key: 'sgi', label: 'SGI (0.18~0.21%)' },
-                        ] as { key: JeonseInsuranceProvider; label: string }[]
-                      ).map(({ key, label }) => (
-                        <button
-                          key={key}
-                          onClick={() => updateJeonseInputs({ insuranceProvider: key })}
-                          className={`py-2 rounded-xl text-xs font-medium transition-colors ${
-                            jeonseInputs.insuranceProvider === key
-                              ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                              : 'bg-gray-50 text-gray-600'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </>
               )}
 

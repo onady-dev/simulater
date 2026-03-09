@@ -5,7 +5,6 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { TopBar } from '@/components/layout/TopBar';
 import { PriceStepCard } from '@/components/inputs/PriceStepCard';
 import { PeriodStepCard } from '@/components/inputs/PeriodStepCard';
-import { InflationScenarioSelector } from '@/components/inputs/InflationScenarioSelector';
 import { AutoRecommendation } from '@/components/results/AutoRecommendation';
 import { AssetProjectionChart } from '@/components/charts/AssetProjectionChart';
 import { MonthlyCostSummary } from '@/components/results/MonthlyCostSummary';
@@ -22,9 +21,6 @@ export default function CalculatorPage() {
       <TopBar />
 
       <main className="pb-10 pt-4">
-        {/* 기본값 적용 중 표시 */}
-        <InflationScenarioSelector />
-
         {/* 입력 섹션 */}
         <section className="px-4 space-y-3 mb-4">
           <PriceStepCard />

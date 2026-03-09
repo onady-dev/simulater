@@ -10,10 +10,10 @@ export const DEFAULT_BUY_INPUTS: BuyInputs = {
   loanType: 'equal_payment',
   yearsToHold: 5,
   annualPriceChangeRate: 0.03,
-  availableCash: 300_000_000,   // 현재 보유 자산 기본값 3억
+  availableCash: 100_000_000,   // 현재 보유 자산 기본값 1억
   isFirstHomeBuyer: false,
   isRegulatedZone: false,
-  expectedInvestmentReturn: 0.04,
+  expectedInvestmentReturn: 0.03,
   userSetPriceChangeRate: false,
   userSetLoanRate: false,
   userSetInvestmentReturn: false,
@@ -25,8 +25,8 @@ export const DEFAULT_JEONSE_INPUTS: JeonseInputs = {
   loanRate: 0.035,              // 3.5%
   insuranceProvider: 'hug',
   yearsToHold: 5,
-  expectedInvestmentReturn: 0.04,
-  availableCash: 300_000_000,
+  expectedInvestmentReturn: 0.03,
+  availableCash: 100_000_000,
   userSetLoanRate: false,
   userSetInvestmentReturn: false,
 };
@@ -35,8 +35,8 @@ export const DEFAULT_MONTHLY_RENT_INPUTS: MonthlyRentInputs = {
   depositAmount: 50_000_000,
   monthlyRent: 1_500_000,
   yearsToHold: 5,
-  expectedInvestmentReturn: 0.04,
-  availableCash: 300_000_000,
+  expectedInvestmentReturn: 0.03,
+  availableCash: 100_000_000,
   areaM2: 84,
   marketPrice: 600_000_000,
   userSetInvestmentReturn: false,
