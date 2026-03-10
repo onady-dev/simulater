@@ -140,7 +140,9 @@ export const useCalculatorStore = create<CalculatorState>()(
           inflationScenario: state.inflationScenario,
         }),
         onRehydrateStorage: () => (state) => {
-          if (state) state.calculate();
+          if (state) {
+            setTimeout(() => state.calculate(), 0);
+          }
         },
       },
     ),
