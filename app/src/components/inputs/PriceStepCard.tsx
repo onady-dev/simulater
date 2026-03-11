@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { NumberPadInput } from './NumberPadInput';
 import { SliderWithLabel } from './SliderWithLabel';
-import { formatRate } from '@/lib/utils/format';
+import { formatRate, formatWonCompact } from '@/lib/utils/format';
 
 const BUY_PRICE_PRESETS = [
   { label: '3억', value: 300_000_000 },
@@ -41,6 +41,12 @@ const AVAILABLE_CASH_PRESETS = [
   { label: '5억', value: 500_000_000 },
 ];
 
+const MONTHLY_SAVINGS_PRESETS = [
+  { label: '100만', value: 1_000_000 },
+  { label: '200만', value: 2_000_000 },
+  { label: '300만', value: 3_000_000 },
+  { label: '500만', value: 5_000_000 },
+];
 export function PriceStepCard() {
   const [showBuyDetails, setShowBuyDetails] = useState(false);
   const [showJeonseDetails, setShowJeonseDetails] = useState(false);
@@ -52,6 +58,7 @@ export function PriceStepCard() {
   const updateJeonseInputs = useCalculatorStore((s) => s.updateJeonseInputs);
   const updateMonthlyRentInputs = useCalculatorStore((s) => s.updateMonthlyRentInputs);
 
+  const syncMonthlySavings = useCalculatorStore((s) => s.syncMonthlySavings);
   const syncAvailableCash = (v: number) => {
     updateBuyInputs({ 
       availableCash: v,
@@ -70,6 +77,50 @@ export function PriceStepCard() {
         <h2 className="text-base font-bold text-gray-900 px-1">주택 정보 입력</h2>
 
         {/* 현재 보유 자산 */}
+
+        {/* 월 저축 가능 금액 */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-base font-bold text-gray-900">월 저축 가능 금액</h3>
+            <span className="text-2xl font-bold text-green-500">
+              {formatWonCompact(buyInputs.monthlySavings)}
+            </span>
+          </div>
+
+          <input
+            type="range"
+            min={0}
+            max={10_000_000}
+            step={500_000}
+            value={buyInputs.monthlySavings}
+            onChange={(e) => syncMonthlySavings(Number(e.target.value))}
+            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-500"
+          />
+          <div className="flex justify-between text-xs text-gray-400">
+            <span>0원</span>
+            <span>1,000만</span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {MONTHLY_SAVINGS_PRESETS.map(({ label, value }) => (
+              <button
+                key={value}
+                onClick={() => syncMonthlySavings(value)}
+                className={`py-2 rounded-xl text-xs font-medium transition-colors ${
+                  buyInputs.monthlySavings === value
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs text-gray-500">
+            💡 매달 저축 가능한 금액을 입력하세요 (소득 - 생활비 - 주거비)
+          </p>
+        </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-base font-bold text-gray-900">현재 보유 자산</h3>

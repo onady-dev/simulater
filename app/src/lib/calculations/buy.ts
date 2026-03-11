@@ -27,10 +27,6 @@ function calcRegistrationCosts(price: number): { registrationTax: number; stampD
   return { registrationTax, stampDuty };
 }
 
-export function estimateAnnualMaintenanceFee(areaM2: number): number {
-  return Math.floor(areaM2 * 2_920 * 12);
-}
-
 export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
   const {
     purchasePrice,
@@ -68,10 +64,9 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
   const avgPropertyTax = Math.floor(totalPropertyTax / yearsToHold);
   const avgComprehensiveTax = Math.floor(totalComprehensiveTax / yearsToHold);
   
-  const maintenanceFee = estimateAnnualMaintenanceFee(areaM2);
   const loanSchedule = calculateLoanRepayment(loanAmount, loanRate, loanType, 30, yearsToHold);
   const annualLoanInterest = loanSchedule.yearlyInterestSchedule[0] ?? 0;
-  const annualHoldingTotal = avgPropertyTax + avgComprehensiveTax + maintenanceFee + annualLoanInterest;
+  const annualHoldingTotal = avgPropertyTax + avgComprehensiveTax + annualLoanInterest;
 
   // 처분 비용
   const salePrice = Math.floor(
@@ -112,7 +107,6 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
     annualHoldingCosts: {
       propertyTax: avgPropertyTax,
       comprehensiveTax: avgComprehensiveTax,
-      maintenanceFee,
       loanInterest: annualLoanInterest,
       total: annualHoldingTotal,
     },

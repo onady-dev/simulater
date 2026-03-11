@@ -16,8 +16,8 @@
 #### 1. 계산 로직 수정
 **파일**: `app/src/lib/calculations/buy.ts`
 
-- [ ] `estimateAnnualMaintenanceFee()` 함수 제거
-- [ ] `calculateBuyScenario()` 함수에서 관리비 계산 제거
+- [x] `estimateAnnualMaintenanceFee()` 함수 제거
+- [x] `calculateBuyScenario()` 함수에서 관리비 계산 제거
   - `maintenanceFee` 변수 제거
   - `annualHoldingTotal` 계산에서 `maintenanceFee` 제외
 
@@ -35,7 +35,7 @@ const annualHoldingTotal = avgPropertyTax + avgComprehensiveTax + annualLoanInte
 #### 2. 타입 정의 수정
 **파일**: `app/src/types/index.ts`
 
-- [ ] `BuyAnnualHoldingCosts` 인터페이스에서 `maintenanceFee` 필드 제거
+- [x] `BuyAnnualHoldingCosts` 인터페이스에서 `maintenanceFee` 필드 제거
 
 **수정 전**:
 ```typescript

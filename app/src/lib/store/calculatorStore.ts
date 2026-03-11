@@ -32,6 +32,7 @@ interface CalculatorState {
   updateMonthlyRentInputs: (partial: Partial<MonthlyRentInputs>) => void;
   calculate: () => void;
   resetAll: () => void;
+  syncMonthlySavings: (savings: number) => void;
   setActiveTab: (tab: ScenarioKey) => void;
 }
 
@@ -130,6 +131,15 @@ export const useCalculatorStore = create<CalculatorState>()(
         },
 
         setActiveTab: (tab) => set({ activeTab: tab }),
+
+        syncMonthlySavings: (savings) => {
+          set((s) => ({
+            buyInputs: { ...s.buyInputs, monthlySavings: savings },
+            jeonseInputs: { ...s.jeonseInputs, monthlySavings: savings },
+            monthlyRentInputs: { ...s.monthlyRentInputs, monthlySavings: savings },
+          }));
+          get().calculate();
+        },
       }),
       {
         name: 'calculator-inputs',

@@ -43,7 +43,7 @@ function BuyCostRows({ result, yearsToHold }: { result: CostBreakdown; yearsToHo
     { label: `연간 보유비용 × ${yearsToHold}년`, value: result.annualHoldingCosts.total * yearsToHold },
     { label: '대출이자 (연)', value: result.annualHoldingCosts.loanInterest, isSubItem: true },
     { label: '재산세 (연)', value: result.annualHoldingCosts.propertyTax, isSubItem: true },
-    { label: '관리비 (연)', value: result.annualHoldingCosts.maintenanceFee, isSubItem: true },
+    { label: '종합부동산세 (연)', value: result.annualHoldingCosts.comprehensiveTax, isSubItem: true },
     { label: '처분 비용', value: result.disposalCosts.total },
     { label: '양도소득세', value: result.disposalCosts.capitalGainsTax, isSubItem: true },
     { label: '매도 중개수수료', value: result.disposalCosts.agentFee, isSubItem: true },
