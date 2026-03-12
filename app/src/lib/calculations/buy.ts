@@ -1,4 +1,4 @@
-import type { BuyInputs, CostBreakdown } from '@/types';
+import type { BuyInputs, CostBreakdown, HomeOwnerCount } from '@/types';
 import {
   calculateAcquisitionTax,
   calculateCapitalGainsTax,
@@ -8,23 +8,43 @@ import {
 import { calculateBuyAgentFee } from './agentFees';
 import { calculateLoanRepayment } from './loanRepayment';
 
-function estimateLegalFee(price: number): number {
+export function estimateLegalFee(price: number): number {
   if (price <= 100_000_000) return 300_000;
   if (price <= 300_000_000) return 450_000;
   if (price <= 600_000_000) return 600_000;
   return 800_000;
 }
 
-function estimateBondDiscountCost(price: number): number {
+export function estimateBondDiscountCost(price: number): number {
   return Math.floor(price * 0.004);
 }
 
-function calcRegistrationCosts(price: number): { registrationTax: number; stampDuty: number } {
+export function calcRegistrationCosts(price: number): { registrationTax: number; stampDuty: number } {
   const registrationTax = Math.floor(price * 0.002);
   let stampDuty = 0;
   if (price >= 1_000_000_000) stampDuty = 350_000;
   else if (price >= 100_000_000) stampDuty = 150_000;
   return { registrationTax, stampDuty };
+}
+
+/**
+ * 매수 시 초기 비용 계산
+ * @returns 초기 비용 총액 (취득세 + 중개수수료 + 법무비용 + 채권할인 + 등록세 + 인지세)
+ */
+export function calculateBuyInitialCosts(
+  purchasePrice: number,
+  numHomes: HomeOwnerCount,
+  areaM2: number,
+  isFirstHomeBuyer: boolean,
+): number {
+  const acqTax = calculateAcquisitionTax(purchasePrice, numHomes, areaM2, isFirstHomeBuyer);
+  const buyAgentFee = calculateBuyAgentFee(purchasePrice);
+  const legalFee = estimateLegalFee(purchasePrice);
+  const bondDiscount = estimateBondDiscountCost(purchasePrice);
+  const { registrationTax, stampDuty } = calcRegistrationCosts(purchasePrice);
+  
+  // 생애최초 감면은 제외 (실제 지출액만 계산)
+  return acqTax.total + buyAgentFee + legalFee + bondDiscount + registrationTax + stampDuty;
 }
 
 export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {

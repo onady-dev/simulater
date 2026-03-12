@@ -118,7 +118,7 @@ export function PriceStepCard() {
           </div>
 
           <p className="text-xs text-gray-500">
-            💡 매달 저축 가능한 금액을 입력하세요 (소득 - 생활비 - 주거비)
+            💡 매달 저축 가능한 금액을 입력하세요 (소득 - 생활비)
           </p>
         </div>
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">

@@ -6,11 +6,13 @@ import type {
   BreakevenDataPoint,
   AssetProjectionPoint,
 } from '@/types';
-import { calculateBuyScenario } from './buy';
+import { calculateBuyScenario, calculateBuyInitialCosts } from './buy';
 import { calculateJeonseScenario } from './jeonse';
 import { calculateMonthlyRentScenario } from './monthlyRent';
 import { calculateLoanRepayment } from './loanRepayment';
 import { calculatePropertyTax, calculateComprehensiveRealEstateTax } from './taxes';
+import { calculateRentAgentFee } from './agentFees';
+import { calcInsurancePremium } from './jeonse';
 
 /**
  * 연도별 누적 비용 시계열 생성
@@ -100,6 +102,26 @@ export function generateAssetProjectionSeries(
   const jeonseInitialInvestable = Math.max(0, availableCash - jeonseInputs.depositAmount);
   const rentInitialInvestable = Math.max(0, availableCash - monthlyRentInputs.depositAmount);
 
+  // 초기 비용 계산 (1회만)
+  const buyInitialCosts = calculateBuyInitialCosts(
+    purchasePrice,
+    numHomes,
+    buyInputs.areaM2,
+    buyInputs.isFirstHomeBuyer
+  );
+  
+  const jeonseAgentFee = calculateRentAgentFee(jeonseInputs.depositAmount);
+  const jeonseInsurancePremium = calcInsurancePremium(
+    jeonseInputs.depositAmount,
+    jeonseInputs.insuranceProvider,
+    yearsToHold
+  );
+  const jeonseInitialCosts = jeonseAgentFee + jeonseInsurancePremium;
+  
+  const rentTransactionAmount = monthlyRentInputs.depositAmount + monthlyRentInputs.monthlyRent * 100;
+  const rentAgentFee = calculateRentAgentFee(rentTransactionAmount);
+  const rentInitialCosts = rentAgentFee;
+
   return Array.from({ length: yearsToHold }, (_, i) => {
     const year = i + 1;
 
@@ -119,7 +141,7 @@ export function generateAssetProjectionSeries(
     }
     
     const salePrice = Math.floor(purchasePrice * Math.pow(1 + annualPriceChangeRate, year));
-    const buyNetAsset = Math.round(buyFinancialAsset + salePrice - buyLoanSchedule.remainingPrincipal);
+    const buyNetAsset = Math.round(buyFinancialAsset - buyInitialCosts + salePrice - buyLoanSchedule.remainingPrincipal);
 
     // ===== 전세 순자산 =====
     const jeonseMonthlyInterest = (jeonseLoanAmount * jeonseInputs.loanRate) / 12;
@@ -147,7 +169,7 @@ export function generateAssetProjectionSeries(
       const yearlyContribution = actualSavings * 12 * Math.pow(1 + r, remainingYears);
       jeonseFinancialAsset += yearlyContribution;
     }
-    const jeonseNetAsset = Math.round(jeonseFinancialAsset + currentJeonseDeposit - jeonseLoanAmount);
+    const jeonseNetAsset = Math.round(jeonseFinancialAsset - jeonseInitialCosts + currentJeonseDeposit - jeonseLoanAmount);
 
     // ===== 월세 순자산 =====
     // 월세: 2년마다 재계약 시 법정 상한 적용, 연도별 실제 월세 반영
@@ -165,7 +187,7 @@ export function generateAssetProjectionSeries(
       rentFinancialAsset += yearlyContribution;
     }
     
-    const monthlyRentNetAsset = Math.round(rentFinancialAsset + monthlyRentInputs.depositAmount);
+    const monthlyRentNetAsset = Math.round(rentFinancialAsset - rentInitialCosts + monthlyRentInputs.depositAmount);
 
     return { year, buyNetAsset, jeonseNetAsset, monthlyRentNetAsset };
   });

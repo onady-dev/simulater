@@ -2,7 +2,7 @@ import type { JeonseInputs, JeonseCostBreakdown } from '@/types';
 import { calculateRentAgentFee } from './agentFees';
 import { JEONSE_INSURANCE_RATES } from '@/lib/constants/taxRates';
 
-function calcInsurancePremium(
+export function calcInsurancePremium(
   deposit: number,
   provider: JeonseInputs['insuranceProvider'],
   years: number,

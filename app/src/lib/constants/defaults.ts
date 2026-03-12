@@ -31,6 +31,7 @@ export const DEFAULT_JEONSE_INPUTS: JeonseInputs = {
   availableCash: 100_000_000,
   userSetLoanRate: false,
   userSetInvestmentReturn: false,
+  rentGrowthRate: 0.05,         // 5% 고정 (법정 상한)
 };
 
 export const DEFAULT_MONTHLY_RENT_INPUTS: MonthlyRentInputs = {
@@ -43,4 +44,5 @@ export const DEFAULT_MONTHLY_RENT_INPUTS: MonthlyRentInputs = {
   areaM2: 84,
   marketPrice: 600_000_000,
   userSetInvestmentReturn: false,
+  rentGrowthRate: 0.05,         // 5% 고정 (법정 상한)
 };
