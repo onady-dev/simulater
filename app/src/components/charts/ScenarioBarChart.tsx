@@ -53,9 +53,9 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
 
 export function ScenarioBarChart({ buyResult, jeonseResult, monthlyRentResult }: Props) {
   const data: ChartDatum[] = [
-    { name: '매수', value: buyResult.netTotal, color: '#3182F6' },
+    { name: '매수', value: buyResult.netTotal, color: '#3B82F6' },
     { name: '전세', value: jeonseResult.netTotal, color: '#F59E0B' },
-    { name: '월세', value: monthlyRentResult.netTotal, color: '#00B493' },
+    { name: '월세', value: monthlyRentResult.netTotal, color: '#A855F7' },
   ];
 
   return (

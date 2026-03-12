@@ -73,7 +73,7 @@ export function YearlyCostChart({ data, currentYear }: Props) {
           <Line
             type="monotone"
             dataKey="buyCumulative"
-            stroke="#3182F6"
+            stroke="#3B82F6"
             name="매수"
             strokeWidth={2}
             dot={false}
@@ -91,7 +91,7 @@ export function YearlyCostChart({ data, currentYear }: Props) {
           <Line
             type="monotone"
             dataKey="monthlyRentCumulative"
-            stroke="#00B493"
+            stroke="#A855F7"
             name="월세"
             strokeWidth={2}
             dot={false}

@@ -554,6 +554,330 @@ export function generateRecommendation(
 
 ---
 
+## 개선 #8: 월세 입력 UI 개선 및 슬라이더 미세 조정 기능 추가
+
+### 📋 개선 사유
+
+**현재 문제점**:
+1. 월세 보증금/월세는 NumberPadInput 바텀시트로만 입력 가능
+2. 매수/전세는 메인 페이지에서 슬라이더로 직접 조정 가능하지만 월세는 불가능
+3. 슬라이더만으로는 정확한 값 조정이 어려움 (특히 큰 금액)
+4. 월 저축액 슬라이더 스텝이 50만원으로 너무 커서 세밀한 조정 불가능
+
+**개선 방향**:
+1. 월세도 매수/전세처럼 메인 페이지에서 슬라이더로 직접 입력
+2. 모든 슬라이더에 양쪽 끝에 -/+ 버튼 추가하여 최소 단위로 클릭 조정 가능
+3. 월 저축액 슬라이더 스텝을 10만원으로 변경
+
+### 🎯 작업 범위
+
+#### 1. 월세 입력을 메인 페이지로 이동
+**파일**: `app/src/components/inputs/PriceStepCard.tsx`
+
+**현재 구조**:
+```typescript
+// 월세 정보 - NumberPadInput 바텀시트
+<div className="bg-white ...">
+  <h3>월세 정보</h3>
+  <button onClick={() => setShowMonthlyRentSheet(true)}>
+    {/* 클릭하면 바텀시트 열림 */}
+  </button>
+</div>
+```
+
+**변경 후 구조**:
+```typescript
+// 월세 정보 - 인라인 슬라이더 (매수/전세와 동일)
+<div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
+  <h3 className="text-base font-bold text-purple-500">월세 정보</h3>
+  
+  {/* 보증금 입력 */}
+  <div>
+    <div className="flex justify-between items-center mb-2">
+      <label className="text-sm text-gray-600">보증금</label>
+      <span className="text-lg font-bold text-purple-500">
+        {formatWonCompact(monthlyRentInputs.depositAmount)}
+      </span>
+    </div>
+    
+    {/* 슬라이더 + 미세 조정 버튼 */}
+    <div className="flex items-center gap-2">
+      <button 
+        onClick={() => updateMonthlyRentInputs({ 
+          depositAmount: Math.max(0, monthlyRentInputs.depositAmount - 5_000_000) 
+        })}
+        className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold"
+      >
+        −
+      </button>
+      
+      <input
+        type="range"
+        min={0}
+        max={200_000_000}
+        step={5_000_000}
+        value={monthlyRentInputs.depositAmount}
+        onChange={(e) => updateMonthlyRentInputs({ depositAmount: Number(e.target.value) })}
+        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+      />
+      
+      <button 
+        onClick={() => updateMonthlyRentInputs({ 
+          depositAmount: Math.min(200_000_000, monthlyRentInputs.depositAmount + 5_000_000) 
+        })}
+        className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold"
+      >
+        +
+      </button>
+    </div>
+    
+    <div className="flex justify-between text-xs text-gray-400 mt-1">
+      <span>0원</span>
+      <span>2억</span>
+    </div>
+    
+    {/* 프리셋 버튼 */}
+    <div className="grid grid-cols-4 gap-2 mt-2">
+      {DEPOSIT_PRESETS.map(({ label, value }) => (
+        <button
+          key={value}
+          onClick={() => updateMonthlyRentInputs({ depositAmount: value })}
+          className="py-2 rounded-xl text-xs font-medium ..."
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  </div>
+  
+  {/* 월세 입력 */}
+  <div>
+    <div className="flex justify-between items-center mb-2">
+      <label className="text-sm text-gray-600">월세</label>
+      <span className="text-lg font-bold text-purple-500">
+        {formatWonCompact(monthlyRentInputs.monthlyRent)}
+      </span>
+    </div>
+    
+    {/* 슬라이더 + 미세 조정 버튼 */}
+    <div className="flex items-center gap-2">
+      <button 
+        onClick={() => updateMonthlyRentInputs({ 
+          monthlyRent: Math.max(0, monthlyRentInputs.monthlyRent - 100_000) 
+        })}
+        className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold"
+      >
+        −
+      </button>
+      
+      <input
+        type="range"
+        min={0}
+        max={3_000_000}
+        step={100_000}
+        value={monthlyRentInputs.monthlyRent}
+        onChange={(e) => updateMonthlyRentInputs({ monthlyRent: Number(e.target.value) })}
+        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+      />
+      
+      <button 
+        onClick={() => updateMonthlyRentInputs({ 
+          monthlyRent: Math.min(3_000_000, monthlyRentInputs.monthlyRent + 100_000) 
+        })}
+        className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold"
+      >
+        +
+      </button>
+    </div>
+    
+    <div className="flex justify-between text-xs text-gray-400 mt-1">
+      <span>0원</span>
+      <span>300만</span>
+    </div>
+    
+    {/* 프리셋 버튼 */}
+    <div className="grid grid-cols-4 gap-2 mt-2">
+      {MONTHLY_RENT_PRESETS.map(({ label, value }) => (
+        <button
+          key={value}
+          onClick={() => updateMonthlyRentInputs({ monthlyRent: value })}
+          className="py-2 rounded-xl text-xs font-medium ..."
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  </div>
+</div>
+```
+
+**프리셋 옵션**:
+```typescript
+const DEPOSIT_PRESETS = [
+  { label: '1천만', value: 10_000_000 },
+  { label: '3천만', value: 30_000_000 },
+  { label: '5천만', value: 50_000_000 },
+  { label: '1억', value: 100_000_000 },
+];
+
+const MONTHLY_RENT_PRESETS = [
+  { label: '50만', value: 500_000 },
+  { label: '100만', value: 1_000_000 },
+  { label: '150만', value: 1_500_000 },
+  { label: '200만', value: 2_000_000 },
+];
+```
+
+#### 2. 모든 슬라이더에 미세 조정 버튼 추가
+**파일**: `app/src/components/inputs/PriceStepCard.tsx`
+
+**적용 대상**:
+- 월 저축 가능 금액
+- 현재 보유 자산
+- 매수 정보 (매매가, 전용면적, 대출금)
+- 전세 정보 (보증금, 대출금)
+- 월세 정보 (보증금, 월세)
+
+**공통 패턴**:
+```typescript
+<div className="flex items-center gap-2">
+  <button 
+    onClick={() => /* 값 - step */}
+    className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+  >
+    −
+  </button>
+  
+  <input type="range" className="flex-1 ..." />
+  
+  <button 
+    onClick={() => /* 값 + step */}
+    className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors"
+  >
+    +
+  </button>
+</div>
+```
+
+**각 슬라이더별 스텝**:
+| 항목 | 스텝 | 최소 | 최대 |
+|------|------|------|------|
+| 월 저축액 | 100,000 (10만원) | 0 | 10,000,000 |
+| 보유 자산 | 10,000,000 (1천만) | 0 | 1,000,000,000 |
+| 매매가 | 10,000,000 (1천만) | 100,000,000 | 2,000,000,000 |
+| 전용면적 | 1 (1㎡) | 20 | 200 |
+| 대출금 | 10,000,000 (1천만) | 0 | 매매가/보증금 |
+| 전세 보증금 | 10,000,000 (1천만) | 100,000,000 | 1,500,000,000 |
+| 월세 보증금 | 5,000,000 (500만) | 0 | 200,000,000 |
+| 월세 | 100,000 (10만) | 0 | 3,000,000 |
+
+#### 3. 월 저축액 슬라이더 스텝 변경
+**파일**: `app/src/components/inputs/PriceStepCard.tsx`
+
+**수정 전**:
+```typescript
+<input
+  type="range"
+  min={0}
+  max={10_000_000}
+  step={500_000}  // 50만원
+  value={monthlySavings}
+  onChange={(e) => syncMonthlySavings(Number(e.target.value))}
+/>
+```
+
+**수정 후**:
+```typescript
+<input
+  type="range"
+  min={0}
+  max={10_000_000}
+  step={100_000}  // 10만원
+  value={monthlySavings}
+  onChange={(e) => syncMonthlySavings(Number(e.target.value))}
+/>
+```
+
+#### 4. NumberPadInput 바텀시트 제거 (월세 관련)
+**파일**: `app/src/components/inputs/PriceStepCard.tsx`
+
+- [ ] `showMonthlyRentSheet` state 제거
+- [ ] 월세 관련 NumberPadInput 컴포넌트 호출 제거
+- [ ] 월세 클릭 시 바텀시트 열기 로직 제거
+
+**제거할 코드**:
+```typescript
+// 제거
+const [showMonthlyRentSheet, setShowMonthlyRentSheet] = useState(false);
+
+// 제거
+{showMonthlyRentSheet && (
+  <NumberPadInput
+    title="월세 보증금"
+    value={monthlyRentInputs.depositAmount}
+    onConfirm={(v) => {
+      updateMonthlyRentInputs({ depositAmount: v });
+      setShowMonthlyRentSheet(false);
+    }}
+    onClose={() => setShowMonthlyRentSheet(false)}
+    presets={DEPOSIT_PRESETS}
+  />
+)}
+```
+
+**주의**: NumberPadInput 컴포넌트 자체는 유지 (고급 설정에서 사용)
+
+### 📊 예상 효과
+
+**월세 입력 개선**:
+- 매수/전세와 동일한 UX
+- 메인 페이지에서 즉시 조정 가능
+- 클릭 단계 감소 (바텀시트 불필요)
+
+**미세 조정 버튼**:
+- 정확한 값 입력 가능
+- 슬라이더 + 버튼 조합으로 빠르고 정확한 조정
+- 큰 금액도 세밀하게 조정 가능
+
+**월 저축액 스텝 변경**:
+- 50만원 → 10만원으로 5배 더 세밀한 조정
+- 사용자의 실제 저축액에 더 가깝게 설정 가능
+
+### ⚠️ 주의사항
+
+1. **버튼 크기**: 8×8 (32px) - 터치하기 적당한 크기
+2. **최소/최대값 처리**: Math.max/Math.min으로 범위 제한
+3. **색상 일관성**: 
+   - 매수: blue-500
+   - 전세: orange-500
+   - 월세: purple-500
+4. **반응형**: 모바일에서도 버튼이 잘 보이도록
+5. **접근성**: 버튼에 aria-label 추가 고려
+
+### ✅ 테스트 체크리스트
+
+- [ ] 월세 보증금/월세 슬라이더 정상 동작
+- [ ] 월세 -/+ 버튼 정상 동작
+- [ ] 모든 슬라이더에 -/+ 버튼 추가 확인
+- [ ] 월 저축액 스텝 10만원 확인
+- [ ] 최소/최대값 범위 제한 확인
+- [ ] 매수/전세/월세 UI 일관성 확인
+- [ ] 모바일 반응형 정상 표시
+- [ ] TypeScript 컴파일 에러 없음
+
+### 📈 기대 결과
+
+**사용자 경험**:
+- 모든 입력이 메인 페이지에서 가능
+- 슬라이더로 빠른 조정 + 버튼으로 정확한 조정
+- 일관된 입력 방식으로 학습 곡선 감소
+
+**입력 정확도**:
+- 월 저축액을 10만원 단위로 정확히 설정
+- 모든 금액을 최소 단위로 미세 조정 가능
+
+---
+
 ## 작업 우선순위
 1. ✅ 개선 #1: 매수 관리비 제거 (완료)
 2. ✅ 개선 #2: 월 저축 가능 금액 입력 추가 (완료)
@@ -562,6 +886,7 @@ export function generateRecommendation(
 5. ✅ 개선 #5: 매수 순자산에 초기 비용 반영 (완료)
 6. ✅ 개선 #6: 월세 상승률 버그 수정 (완료)
 7. ✅ 개선 #7: 투자수익률 및 주택가격 상승률 3% 고정 (완료)
+8. ✅ 개선 #8: 월세 입력 UI 개선 및 슬라이더 미세 조정 기능 추가 (완료)
 
 ---
 
@@ -575,3 +900,4 @@ export function generateRecommendation(
 | 2026-03-12 | 개선 #5: 매수 순자산 초기 비용 반영 | ✅ 완료 | 순자산 계산 정확도 개선 |
 | 2026-03-12 | 개선 #6: 월세 상승률 버그 수정 | ✅ 완료 | rentGrowthRate 기본값 5% 추가 |
 | 2026-03-12 | 개선 #7: 수익률/상승률 고정 | ✅ 완료 | 주택 3%, 전월세 5%, 투자 3% |
+| 2026-03-12 | 개선 #8: 월세 UI 개선 및 미세 조정 | ✅ 완료 | 슬라이더 -/+ 버튼, 스텝 10만원 |

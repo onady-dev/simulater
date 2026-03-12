@@ -4,7 +4,9 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { formatWon } from '@/lib/utils/format';
 
 const LABELS = { buy: '매수', jeonse: '전세', monthlyRent: '월세' } as const;
-const COLORS = { buy: '#3182F6', jeonse: '#F59E0B', monthlyRent: '#00B493' } as const;
+const COLORS = { buy: '#3B82F6', jeonse: '#F59E0B', monthlyRent: '#A855F7' } as const;
+const BG_COLORS = { buy: 'from-blue-50 to-indigo-50', jeonse: 'from-amber-50 to-orange-50', monthlyRent: 'from-purple-50 to-fuchsia-50' } as const;
+const BORDER_COLORS = { buy: 'border-blue-100', jeonse: 'border-amber-100', monthlyRent: 'border-purple-100' } as const;
 
 export function MonthlyCostSummary() {
   const results = useCalculatorStore((s) => s.results);
@@ -35,11 +37,10 @@ export function MonthlyCostSummary() {
           return (
             <div
               key={key}
-              className="bg-white rounded-2xl p-3 shadow-sm border-2 transition-colors"
-              style={{ borderColor: isMin ? COLORS[key] : '#E5E7EB' }}
+              className={`bg-gradient-to-br ${BG_COLORS[key]} rounded-2xl p-3 shadow-sm border-2 transition-all ${isMin ? BORDER_COLORS[key] : 'border-gray-200'}`}
             >
               <p className="text-xs text-gray-500 mb-1">{LABELS[key]}</p>
-              <p className="text-sm font-bold leading-tight" style={{ color: COLORS[key] }}>
+              <p className="text-sm font-bold leading-tight text-gray-900">
                 {formatWon(value)}
               </p>
               <p className="text-xs text-gray-400 mt-0.5">{sub}</p>

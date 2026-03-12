@@ -73,7 +73,7 @@ export function BreakevenChart({ data, currentRate }: Props) {
           <Line
             type="monotone"
             dataKey="buyNetCost"
-            stroke="#3182F6"
+            stroke="#3B82F6"
             name="매수"
             strokeWidth={2}
             dot={false}
@@ -92,7 +92,7 @@ export function BreakevenChart({ data, currentRate }: Props) {
           <Line
             type="monotone"
             dataKey="monthlyRentNetCost"
-            stroke="#00B493"
+            stroke="#A855F7"
             name="월세"
             strokeWidth={2}
             dot={false}
