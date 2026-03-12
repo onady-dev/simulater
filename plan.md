@@ -887,6 +887,359 @@ const [showMonthlyRentSheet, setShowMonthlyRentSheet] = useState(false);
 6. ✅ 개선 #6: 월세 상승률 버그 수정 (완료)
 7. ✅ 개선 #7: 투자수익률 및 주택가격 상승률 3% 고정 (완료)
 8. ✅ 개선 #8: 월세 입력 UI 개선 및 슬라이더 미세 조정 기능 추가 (완료)
+9. 🔄 개선 #9: 월 지출 초과 시 경고 표시 (완료)
+
+---
+
+## 개선 #9: 월 지출 초과 시 경고 표시
+
+### 📋 문제 분석
+
+**현재 문제점**:
+- 사용자가 설정한 월 저축액보다 월 지출(대출 상환 + 세금 또는 월세)이 큰 경우 감지 안 됨
+- 순자산 계산에서 `Math.max(0, monthlySavings - expense)`로 처리하여 마이너스를 0으로 변환
+- 실제로는 **매월 적자**가 발생하여 금융자산이 감소해야 하지만 현재는 무시됨
+- 사용자가 현실적으로 불가능한 시나리오를 선택해도 알 수 없음
+
+**예시**:
+```
+월 저축액: 200만원
+매수 월 지출: 281만원 (대출 275만 + 세금 6만)
+→ 실제 적자: -81만원/월
+→ 현재 처리: 0원으로 계산 (잘못됨)
+→ 올바른 처리: 경고 표시 + 해당 시나리오 비활성화 또는 적자 반영
+```
+
+**영향**:
+- 7억 매수 시 월 저축액 200만원으로는 불가능하지만 계산됨
+- 순자산이 과대평가됨 (적자가 누적되지 않음)
+- 사용자가 비현실적인 선택을 할 수 있음
+
+### 🎯 개선 방향
+
+**1단계: 경고 표시 (현실적 접근)**
+- 월 지출이 월 저축액을 초과하면 해당 시나리오에 경고 표시
+- "⚠️ 월 지출이 저축액을 초과합니다. 이 조건으로는 구매/계약이 어렵습니다."
+- 그래프에서 해당 시나리오를 반투명 또는 점선으로 표시
+- 추천 로직에서 제외
+
+**2단계: 적자 반영 (선택적)**
+- 적자를 금융자산에서 차감하여 현실적으로 계산
+- 금융자산이 마이너스가 되면 "파산" 시점 표시
+- 사용자가 선택할 수 있도록 옵션 제공
+
+### 🎯 작업 범위
+
+#### 1. 월 지출 계산 함수 추가
+**파일**: `app/src/lib/calculations/breakeven.ts`
+
+**새 함수 추가**:
+```typescript
+/**
+ * 각 시나리오의 월 지출액 계산
+ * @returns 월 지출액 (대출 상환 + 세금 또는 월세)
+ */
+export function calculateMonthlyExpense(
+  scenario: 'buy' | 'jeonse' | 'monthlyRent',
+  inputs: BuyInputs | JeonseInputs | MonthlyRentInputs,
+): number {
+  if (scenario === 'buy') {
+    const buyInputs = inputs as BuyInputs;
+    const loanAmount = Math.max(0, buyInputs.purchasePrice - buyInputs.availableCash);
+    const loanSchedule = calculateLoanRepayment(loanAmount, buyInputs.loanRate, buyInputs.loanType, 30, 1);
+    const monthlyLoanPayment = loanSchedule.monthlyPayment;
+    const monthlyTax = (
+      calculatePropertyTax(buyInputs.purchasePrice) + 
+      calculateComprehensiveRealEstateTax(buyInputs.purchasePrice, buyInputs.numHomes)
+    ) / 12;
+    return monthlyLoanPayment + monthlyTax;
+  }
+  
+  if (scenario === 'jeonse') {
+    const jeonseInputs = inputs as JeonseInputs;
+    const loanAmount = Math.max(0, jeonseInputs.depositAmount - jeonseInputs.availableCash);
+    const monthlyInterest = (loanAmount * jeonseInputs.loanRate) / 12;
+    return monthlyInterest;
+  }
+  
+  if (scenario === 'monthlyRent') {
+    const rentInputs = inputs as MonthlyRentInputs;
+    return rentInputs.monthlyRent;
+  }
+  
+  return 0;
+}
+
+/**
+ * 월 지출이 월 저축액을 초과하는지 확인
+ * @returns { isAffordable: boolean, monthlyExpense: number, deficit: number }
+ */
+export function checkAffordability(
+  scenario: 'buy' | 'jeonse' | 'monthlyRent',
+  inputs: BuyInputs | JeonseInputs | MonthlyRentInputs,
+  monthlySavings: number,
+): { isAffordable: boolean; monthlyExpense: number; deficit: number } {
+  const monthlyExpense = calculateMonthlyExpense(scenario, inputs);
+  const deficit = monthlyExpense - monthlySavings;
+  const isAffordable = deficit <= 0;
+  
+  return { isAffordable, monthlyExpense, deficit };
+}
+```
+
+#### 2. 입력 카드에 경고 표시
+**파일**: `app/src/components/inputs/PriceStepCard.tsx`
+
+**매수 정보 카드에 경고 추가**:
+```typescript
+import { checkAffordability } from '@/lib/calculations/breakeven';
+
+// 컴포넌트 내부
+const buyAffordability = checkAffordability('buy', buyInputs, buyInputs.monthlySavings);
+
+// UI
+<div className={`bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 shadow-sm border ${
+  !buyAffordability.isAffordable ? 'border-red-300' : 'border-gray-100'
+} space-y-4`}>
+  <div className="flex items-center justify-between">
+    <h3 className="text-base font-bold text-gray-900">매수 정보</h3>
+    {!buyAffordability.isAffordable && (
+      <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+        ⚠️ 월 지출 초과
+      </span>
+    )}
+  </div>
+  
+  {!buyAffordability.isAffordable && (
+    <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+      <p className="text-xs text-red-700 font-medium">
+        ⚠️ 월 지출({formatWonCompact(buyAffordability.monthlyExpense)})이 
+        저축액({formatWonCompact(buyInputs.monthlySavings)})을 초과합니다.
+      </p>
+      <p className="text-xs text-red-600 mt-1">
+        매월 {formatWonCompact(buyAffordability.deficit)} 부족합니다.
+      </p>
+      <p className="text-xs text-gray-600 mt-1">
+        💡 월 저축액을 늘리거나 매수가/대출금을 줄여보세요.
+      </p>
+    </div>
+  )}
+  
+  {/* 기존 입력 필드들 */}
+</div>
+```
+
+**전세/월세도 동일하게 적용**:
+```typescript
+const jeonseAffordability = checkAffordability('jeonse', jeonseInputs, jeonseInputs.monthlySavings);
+const rentAffordability = checkAffordability('monthlyRent', monthlyRentInputs, monthlyRentInputs.monthlySavings);
+```
+
+#### 3. 결과 카드에 경고 표시
+**파일**: `app/src/components/results/MonthlyCostSummary.tsx`
+
+**월 지출 비용 카드에 경고 추가**:
+```typescript
+import { checkAffordability } from '@/lib/calculations/breakeven';
+
+// 컴포넌트 props에 monthlySavings 추가
+interface MonthlyCostSummaryProps {
+  buyInputs: BuyInputs;
+  jeonseInputs: JeonseInputs;
+  monthlyRentInputs: MonthlyRentInputs;
+  monthlySavings: number;  // 추가
+}
+
+// 컴포넌트 내부
+const affordability = {
+  buy: checkAffordability('buy', buyInputs, monthlySavings),
+  jeonse: checkAffordability('jeonse', jeonseInputs, monthlySavings),
+  monthlyRent: checkAffordability('monthlyRent', monthlyRentInputs, monthlySavings),
+};
+
+// UI - 각 카드에 경고 표시
+<div className={`... ${!affordability.buy.isAffordable ? 'opacity-50' : ''}`}>
+  {!affordability.buy.isAffordable && (
+    <div className="absolute top-2 right-2">
+      <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+        ⚠️ 초과
+      </span>
+    </div>
+  )}
+  {/* 기존 내용 */}
+</div>
+```
+
+#### 4. 그래프에서 경고 표시
+**파일**: `app/src/components/charts/AssetProjectionChart.tsx`
+
+**불가능한 시나리오는 점선으로 표시**:
+```typescript
+import { checkAffordability } from '@/lib/calculations/breakeven';
+
+// 컴포넌트 props에 affordability 추가
+interface AssetProjectionChartProps {
+  data: AssetProjectionPoint[];
+  buyInputs: BuyInputs;
+  jeonseInputs: JeonseInputs;
+  monthlyRentInputs: MonthlyRentInputs;
+  monthlySavings: number;
+}
+
+// 컴포넌트 내부
+const affordability = {
+  buy: checkAffordability('buy', buyInputs, monthlySavings),
+  jeonse: checkAffordability('jeonse', jeonseInputs, monthlySavings),
+  monthlyRent: checkAffordability('monthlyRent', monthlyRentInputs, monthlySavings),
+};
+
+// 그래프 선 스타일 변경
+<Line
+  type="monotone"
+  dataKey="buyNetAsset"
+  stroke="#3B82F6"
+  strokeWidth={2}
+  strokeDasharray={!affordability.buy.isAffordable ? "5 5" : "0"}  // 점선
+  opacity={!affordability.buy.isAffordable ? 0.5 : 1}  // 반투명
+  dot={false}
+/>
+```
+
+**범례에 경고 표시**:
+```typescript
+<div className="flex items-center gap-2">
+  <div className="w-3 h-3 rounded-full bg-blue-500" />
+  <span className="text-sm text-gray-700">매수</span>
+  {!affordability.buy.isAffordable && (
+    <span className="text-xs text-red-600">(⚠️ 월 지출 초과)</span>
+  )}
+</div>
+```
+
+#### 5. 추천 로직에서 제외
+**파일**: `app/src/lib/calculations/recommendation.ts`
+
+**불가능한 시나리오는 추천에서 제외**:
+```typescript
+import { checkAffordability } from './breakeven';
+
+export function generateRecommendation(
+  results: CalculationResults,
+  buyInputs: BuyInputs,
+  jeonseInputs: JeonseInputs,
+  monthlyRentInputs: MonthlyRentInputs,
+  monthlySavings: number,
+): Recommendation {
+  // 가능한 시나리오만 필터링
+  const affordability = {
+    buy: checkAffordability('buy', buyInputs, monthlySavings),
+    jeonse: checkAffordability('jeonse', jeonseInputs, monthlySavings),
+    monthlyRent: checkAffordability('monthlyRent', monthlyRentInputs, monthlySavings),
+  };
+  
+  const scenarios = [
+    { name: 'buy', netAsset: results.buy.netAsset, affordable: affordability.buy.isAffordable },
+    { name: 'jeonse', netAsset: results.jeonse.netAsset, affordable: affordability.jeonse.isAffordable },
+    { name: 'monthlyRent', netAsset: results.monthlyRent.netAsset, affordable: affordability.monthlyRent.isAffordable },
+  ];
+  
+  // 가능한 시나리오만 필터링
+  const affordableScenarios = scenarios.filter(s => s.affordable);
+  
+  if (affordableScenarios.length === 0) {
+    return {
+      recommended: 'none',
+      reason: '⚠️ 모든 시나리오에서 월 지출이 저축액을 초과합니다. 월 저축액을 늘리거나 조건을 조정해주세요.',
+    };
+  }
+  
+  // 가능한 시나리오 중 최적 선택
+  const best = affordableScenarios.sort((a, b) => b.netAsset - a.netAsset)[0];
+  
+  // 불가능한 시나리오 경고 추가
+  const unaffordableScenarios = scenarios.filter(s => !s.affordable);
+  const warnings = unaffordableScenarios.map(s => 
+    `⚠️ ${s.name === 'buy' ? '매수' : s.name === 'jeonse' ? '전세' : '월세'}는 월 지출이 초과되어 선택할 수 없습니다.`
+  );
+  
+  return {
+    recommended: best.name,
+    reason: `${best.name === 'buy' ? '매수' : best.name === 'jeonse' ? '전세' : '월세'}가 가장 유리합니다.`,
+    warnings,
+  };
+}
+```
+
+### 📊 예상 효과
+
+**사용자 경험**:
+- 불가능한 시나리오를 즉시 인지
+- 월 저축액 또는 매수가/대출금 조정 유도
+- 현실적인 선택만 비교 가능
+
+**정확성**:
+- 비현실적인 시나리오 제외
+- 순자산 과대평가 방지
+- 추천 로직의 신뢰성 향상
+
+**UI/UX**:
+- 입력 단계에서 즉시 피드백
+- 결과 화면에서 명확한 경고
+- 그래프에서 시각적 구분
+
+### ⚠️ 주의사항
+
+1. **경고 기준**: `monthlyExpense > monthlySavings`
+2. **여유 자금 고려**: 초기 여유금이 있어도 매월 적자면 장기적으로 불가능
+3. **대출 상환 방식**: 원리금균등 vs 원금균등에 따라 월 지출 다름
+4. **세금 변동**: 재산세/종부세는 집값 상승에 따라 증가하지만 1년차 기준으로 계산
+5. **전월세 상승**: 2년마다 5% 상승하므로 장기적으로는 월 지출 증가 (현재는 초기 기준)
+
+### 📈 기대 결과
+
+**예시 1: 7억 매수, 월 저축 200만원**
+```
+⚠️ 매수 정보
+월 지출(281만원)이 저축액(200만원)을 초과합니다.
+매월 81만원 부족합니다.
+💡 월 저축액을 늘리거나 매수가/대출금을 줄여보세요.
+```
+
+**예시 2: 5억 매수, 월 저축 200만원**
+```
+✅ 매수 정보
+월 지출: 157만원
+실제 저축: 43만원/월
+```
+
+**추천 결과**:
+```
+추천: 전세
+이유: 매수는 월 지출이 초과되어 선택할 수 없습니다.
+```
+
+### ✅ 테스트 체크리스트
+
+- [ ] 월 지출 계산 정확성 확인
+- [ ] 입력 카드에 경고 표시 확인
+- [ ] 결과 카드에 경고 표시 확인
+- [ ] 그래프에서 점선/반투명 표시 확인
+- [ ] 추천 로직에서 제외 확인
+- [ ] 모든 시나리오 불가능 시 "none" 추천 확인
+- [ ] 월 저축액 변경 시 실시간 업데이트 확인
+- [ ] TypeScript 컴파일 에러 없음
+
+---
+
+## 작업 우선순위
+1. ✅ 개선 #1: 매수 관리비 제거 (완료)
+2. ✅ 개선 #2: 월 저축 가능 금액 입력 추가 (완료)
+3. ✅ 개선 #3: 월세 인라인 입력 변경 (완료)
+4. ✅ 개선 #4: 순자산 계산 통일 (완료)
+5. ✅ 개선 #5: 매수 순자산에 초기 비용 반영 (완료)
+6. ✅ 개선 #6: 월세 상승률 버그 수정 (완료)
+7. ✅ 개선 #7: 투자수익률 및 주택가격 상승률 3% 고정 (완료)
+8. ✅ 개선 #8: 월세 입력 UI 개선 및 슬라이더 미세 조정 기능 추가 (완료)
 
 ---
 
@@ -901,3 +1254,4 @@ const [showMonthlyRentSheet, setShowMonthlyRentSheet] = useState(false);
 | 2026-03-12 | 개선 #6: 월세 상승률 버그 수정 | ✅ 완료 | rentGrowthRate 기본값 5% 추가 |
 | 2026-03-12 | 개선 #7: 수익률/상승률 고정 | ✅ 완료 | 주택 3%, 전월세 5%, 투자 3% |
 | 2026-03-12 | 개선 #8: 월세 UI 개선 및 미세 조정 | ✅ 완료 | 슬라이더 -/+ 버튼, 스텝 10만원 |
+| 2026-03-12 | 개선 #9: 월 지출 초과 경고 | ✅ 완료 | 현실적 시나리오만 비교 |

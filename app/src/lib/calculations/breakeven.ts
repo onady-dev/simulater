@@ -73,6 +73,52 @@ export function convertJeonseToMonthlyRent(
 }
 
 /**
+ * 각 시나리오의 월 지출액 계산
+ */
+export function calculateMonthlyExpense(
+  scenario: 'buy' | 'jeonse' | 'monthlyRent',
+  inputs: BuyInputs | JeonseInputs | MonthlyRentInputs,
+): number {
+  if (scenario === 'buy') {
+    const buyInputs = inputs as BuyInputs;
+    const loanAmount = Math.max(0, buyInputs.purchasePrice - buyInputs.availableCash);
+    const loanSchedule = calculateLoanRepayment(loanAmount, buyInputs.loanRate, buyInputs.loanType, 30, 1);
+    const monthlyLoanPayment = loanSchedule.monthlyPayment;
+    const monthlyTax = (calculatePropertyTax(buyInputs.purchasePrice) + calculateComprehensiveRealEstateTax(buyInputs.purchasePrice, buyInputs.numHomes)) / 12;
+    return monthlyLoanPayment + monthlyTax;
+  }
+  
+  if (scenario === 'jeonse') {
+    const jeonseInputs = inputs as JeonseInputs;
+    const loanAmount = Math.max(0, jeonseInputs.depositAmount - jeonseInputs.availableCash);
+    const monthlyInterest = (loanAmount * jeonseInputs.loanRate) / 12;
+    return monthlyInterest;
+  }
+  
+  if (scenario === 'monthlyRent') {
+    const rentInputs = inputs as MonthlyRentInputs;
+    return rentInputs.monthlyRent;
+  }
+  
+  return 0;
+}
+
+/**
+ * 월 지출이 월 저축액을 초과하는지 확인
+ */
+export function checkAffordability(
+  scenario: 'buy' | 'jeonse' | 'monthlyRent',
+  inputs: BuyInputs | JeonseInputs | MonthlyRentInputs,
+  monthlySavings: number,
+): { isAffordable: boolean; monthlyExpense: number; deficit: number } {
+  const monthlyExpense = calculateMonthlyExpense(scenario, inputs);
+  const deficit = monthlyExpense - monthlySavings;
+  const isAffordable = deficit <= 0;
+  
+  return { isAffordable, monthlyExpense, deficit };
+}
+
+/**
  * 순자산 변화 시뮬레이션 시계열 생성
  *
  * 통일된 계산 방식: 순자산 = 금융자산 + 실물자산 - 부채

@@ -13,6 +13,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { formatWon } from '@/lib/utils/format';
+import { checkAffordability } from '@/lib/calculations/breakeven';
 import type { AssetProjectionPoint } from '@/types';
 
 interface TooltipProps {
@@ -40,8 +41,15 @@ export function AssetProjectionChart() {
   const results = useCalculatorStore((s) => s.results);
   const yearsToHold = useCalculatorStore((s) => s.buyInputs.yearsToHold);
   const investmentRate = useCalculatorStore((s) => s.jeonseInputs.expectedInvestmentReturn);
+  const buyInputs = useCalculatorStore((s) => s.buyInputs);
+  const jeonseInputs = useCalculatorStore((s) => s.jeonseInputs);
+  const monthlyRentInputs = useCalculatorStore((s) => s.monthlyRentInputs);
 
   if (!results) return null;
+
+  const buyAffordability = checkAffordability('buy', buyInputs, buyInputs.monthlySavings);
+  const jeonseAffordability = checkAffordability('jeonse', jeonseInputs, jeonseInputs.monthlySavings);
+  const rentAffordability = checkAffordability('monthlyRent', monthlyRentInputs, monthlyRentInputs.monthlySavings);
 
   const data: AssetProjectionPoint[] = results.assetProjectionSeries;
 
@@ -83,6 +91,8 @@ export function AssetProjectionChart() {
               stroke="#3B82F6"
               name="매수"
               strokeWidth={2.5}
+              strokeDasharray={!buyAffordability.isAffordable ? "5 5" : "0"}
+              opacity={!buyAffordability.isAffordable ? 0.5 : 1}
               dot={false}
             />
             <Line
@@ -91,6 +101,8 @@ export function AssetProjectionChart() {
               stroke="#F59E0B"
               name="전세"
               strokeWidth={2.5}
+              strokeDasharray={!jeonseAffordability.isAffordable ? "5 5" : "0"}
+              opacity={!jeonseAffordability.isAffordable ? 0.5 : 1}
               dot={false}
             />
             <Line
@@ -99,12 +111,25 @@ export function AssetProjectionChart() {
               stroke="#A855F7"
               name="월세"
               strokeWidth={2.5}
+              strokeDasharray={!rentAffordability.isAffordable ? "5 5" : "0"}
+              opacity={!rentAffordability.isAffordable ? 0.5 : 1}
               dot={false}
             />
             <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {(!buyAffordability.isAffordable || !jeonseAffordability.isAffordable || !rentAffordability.isAffordable) && (
+        <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3">
+          <p className="text-xs text-red-700 font-medium mb-1">⚠️ 월 지출 초과 시나리오</p>
+          <ul className="text-xs text-red-600 space-y-0.5">
+            {!buyAffordability.isAffordable && <li>• 매수: 점선으로 표시 (월 지출이 저축액 초과)</li>}
+            {!jeonseAffordability.isAffordable && <li>• 전세: 점선으로 표시 (월 지출이 저축액 초과)</li>}
+            {!rentAffordability.isAffordable && <li>• 월세: 점선으로 표시 (월 지출이 저축액 초과)</li>}
+          </ul>
+        </div>
+      )}
 
       <p className="text-xs text-gray-400 mt-3">
         * 실제 자산은 투자수익률·집값 변동에 따라 크게 달라질 수 있습니다

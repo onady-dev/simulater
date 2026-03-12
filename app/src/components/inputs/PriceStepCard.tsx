@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useCalculatorStore } from '@/lib/store/calculatorStore';
 import { SliderWithLabel } from './SliderWithLabel';
 import { formatRate, formatWonCompact } from '@/lib/utils/format';
+import { checkAffordability } from '@/lib/calculations/breakeven';
 
 const BUY_PRICE_PRESETS = [
   { label: '3억', value: 300_000_000 },
@@ -70,6 +71,11 @@ export function PriceStepCard() {
     });
     updateMonthlyRentInputs({ availableCash: v });
   };
+
+  // 월 지출 초과 확인
+  const buyAffordability = checkAffordability('buy', buyInputs, buyInputs.monthlySavings);
+  const jeonseAffordability = checkAffordability('jeonse', jeonseInputs, jeonseInputs.monthlySavings);
+  const rentAffordability = checkAffordability('monthlyRent', monthlyRentInputs, monthlyRentInputs.monthlySavings);
 
   return (
     <>
@@ -190,13 +196,37 @@ export function PriceStepCard() {
         </div>
 
         {/* 매수 정보 */}
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 shadow-sm border border-blue-100 space-y-4">
+        <div className={`bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-5 shadow-sm border ${
+          !buyAffordability.isAffordable ? 'border-red-300' : 'border-blue-100'
+        } space-y-4`}>
           <div className="flex justify-between items-center">
             <h3 className="text-base font-bold text-gray-900">매수 정보</h3>
-            <span className="text-2xl font-bold text-gray-900">
-              {(buyInputs.purchasePrice / 100_000_000).toFixed(1)}억원
-            </span>
+            <div className="flex items-center gap-2">
+              {!buyAffordability.isAffordable && (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                  ⚠️ 월 지출 초과
+                </span>
+              )}
+              <span className="text-2xl font-bold text-gray-900">
+                {(buyInputs.purchasePrice / 100_000_000).toFixed(1)}억원
+              </span>
+            </div>
           </div>
+
+          {!buyAffordability.isAffordable && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs text-red-700 font-medium">
+                ⚠️ 월 지출({formatWonCompact(buyAffordability.monthlyExpense)})이 
+                저축액({formatWonCompact(buyInputs.monthlySavings)})을 초과합니다.
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                매월 {formatWonCompact(buyAffordability.deficit)} 부족합니다.
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                💡 월 저축액을 늘리거나 매수가/대출금을 줄여보세요.
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <button
@@ -308,13 +338,37 @@ export function PriceStepCard() {
         </div>
 
         {/* 전세 정보 */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 shadow-sm border border-amber-100 space-y-4">
+        <div className={`bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-5 shadow-sm border ${
+          !jeonseAffordability.isAffordable ? 'border-red-300' : 'border-amber-100'
+        } space-y-4`}>
           <div className="flex justify-between items-center">
             <h3 className="text-base font-bold text-gray-900">전세 정보</h3>
-            <span className="text-2xl font-bold text-gray-900">
-              {(jeonseInputs.depositAmount / 100_000_000).toFixed(1)}억원
-            </span>
+            <div className="flex items-center gap-2">
+              {!jeonseAffordability.isAffordable && (
+                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                  ⚠️ 월 지출 초과
+                </span>
+              )}
+              <span className="text-2xl font-bold text-gray-900">
+                {(jeonseInputs.depositAmount / 100_000_000).toFixed(1)}억원
+              </span>
+            </div>
           </div>
+
+          {!jeonseAffordability.isAffordable && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs text-red-700 font-medium">
+                ⚠️ 월 지출({formatWonCompact(jeonseAffordability.monthlyExpense)})이 
+                저축액({formatWonCompact(jeonseInputs.monthlySavings)})을 초과합니다.
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                매월 {formatWonCompact(jeonseAffordability.deficit)} 부족합니다.
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                💡 월 저축액을 늘리거나 전세 보증금/대출금을 줄여보세요.
+              </p>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <button
@@ -426,8 +480,32 @@ export function PriceStepCard() {
         </div>
 
         {/* 월세 정보 */}
-        <div className="bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-2xl p-5 shadow-sm border border-purple-100 space-y-4">
-          <h3 className="text-base font-bold text-gray-900">월세 정보</h3>
+        <div className={`bg-gradient-to-br from-purple-50 to-fuchsia-50 rounded-2xl p-5 shadow-sm border ${
+          !rentAffordability.isAffordable ? 'border-red-300' : 'border-purple-100'
+        } space-y-4`}>
+          <div className="flex justify-between items-center">
+            <h3 className="text-base font-bold text-gray-900">월세 정보</h3>
+            {!rentAffordability.isAffordable && (
+              <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
+                ⚠️ 월 지출 초과
+              </span>
+            )}
+          </div>
+
+          {!rentAffordability.isAffordable && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs text-red-700 font-medium">
+                ⚠️ 월 지출({formatWonCompact(rentAffordability.monthlyExpense)})이 
+                저축액({formatWonCompact(monthlyRentInputs.monthlySavings)})을 초과합니다.
+              </p>
+              <p className="text-xs text-red-600 mt-1">
+                매월 {formatWonCompact(rentAffordability.deficit)} 부족합니다.
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                💡 월 저축액을 늘리거나 월세를 줄여보세요.
+              </p>
+            </div>
+          )}
           
           {/* 보증금 */}
           <div>

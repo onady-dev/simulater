@@ -63,7 +63,7 @@ export const useCalculatorStore = create<CalculatorState>()(
           const { buyInputs, jeonseInputs, monthlyRentInputs } = get();
 
           const results = runAllCalculations(buyInputs, jeonseInputs, monthlyRentInputs);
-          const recommendation = generateRecommendation(results, buyInputs);
+          const recommendation = generateRecommendation(results, buyInputs, jeonseInputs, monthlyRentInputs);
 
           set({ results, recommendation });
         },

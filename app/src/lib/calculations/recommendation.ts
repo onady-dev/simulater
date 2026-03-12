@@ -2,26 +2,54 @@ import type {
   CalculationResults,
   Recommendation,
   BuyInputs,
+  JeonseInputs,
+  MonthlyRentInputs,
   ScenarioKey,
 } from '@/types';
 import { formatWon } from '@/lib/utils/format';
+import { checkAffordability } from './breakeven';
 
 export function generateRecommendation(
   results: CalculationResults,
-  buyInputs: BuyInputs
+  buyInputs: BuyInputs,
+  jeonseInputs: JeonseInputs,
+  monthlyRentInputs: MonthlyRentInputs
 ): Recommendation {
+  // 월 지출 초과 확인
+  const buyAffordability = checkAffordability('buy', buyInputs, buyInputs.monthlySavings);
+  const jeonseAffordability = checkAffordability('jeonse', jeonseInputs, jeonseInputs.monthlySavings);
+  const rentAffordability = checkAffordability('monthlyRent', monthlyRentInputs, monthlyRentInputs.monthlySavings);
+
   const lastIdx = buyInputs.yearsToHold - 1;
   const finalAssets = results.assetProjectionSeries[lastIdx];
+
+  const scenarios: Array<{ key: ScenarioKey; asset: number; affordable: boolean }> = [
+    { key: 'buy', asset: finalAssets.buyNetAsset, affordable: buyAffordability.isAffordable },
+    { key: 'jeonse', asset: finalAssets.jeonseNetAsset, affordable: jeonseAffordability.isAffordable },
+    { key: 'monthlyRent', asset: finalAssets.monthlyRentNetAsset, affordable: rentAffordability.isAffordable },
+  ];
+
+  // 가능한 시나리오만 필터링
+  const affordableScenarios = scenarios.filter(s => s.affordable);
+
+  if (affordableScenarios.length === 0) {
+    return {
+      primary: 'jeonse',
+      secondary: 'monthlyRent',
+      reasoning: ['⚠️ 모든 시나리오에서 월 지출이 저축액을 초과합니다.', '월 저축액을 늘리거나 조건을 조정해주세요.'],
+      warnings: ['현재 설정으로는 어떤 선택도 불가능합니다.'],
+    };
+  }
+
+  const sorted = affordableScenarios.sort((a, b) => b.asset - a.asset);
+  const primary = sorted[0].key;
+  const secondary = sorted.length > 1 ? sorted[1].key : primary;
 
   const assets: Record<ScenarioKey, number> = {
     buy: finalAssets.buyNetAsset,
     jeonse: finalAssets.jeonseNetAsset,
     monthlyRent: finalAssets.monthlyRentNetAsset,
   };
-
-  const sorted = (Object.entries(assets) as [ScenarioKey, number][]).sort((a, b) => b[1] - a[1]);
-  const primary = sorted[0][0];
-  const secondary = sorted[1][0];
 
   const reasoning: string[] = [];
   const warnings: string[] = [];
@@ -48,6 +76,15 @@ export function generateRecommendation(
 
   if (primary === 'jeonse' || secondary === 'jeonse') {
     warnings.push('전세는 기회비용이 크고 자산 증식 효과가 없습니다');
+  }
+
+  // 불가능한 시나리오 경고 추가
+  const unaffordableScenarios = scenarios.filter(s => !s.affordable);
+  if (unaffordableScenarios.length > 0) {
+    const names = { buy: '매수', jeonse: '전세', monthlyRent: '월세' };
+    unaffordableScenarios.forEach(s => {
+      warnings.push(`⚠️ ${names[s.key]}는 월 지출이 초과되어 선택할 수 없습니다.`);
+    });
   }
 
   return { primary, secondary, reasoning, warnings, leverageAdvice };
