@@ -308,7 +308,7 @@ export default function RootLayout({
 
 ### 2.4 Calculator Page 통합
 
-**파일 수정**: `app/src/app/calculator/page.tsx`
+**파일 수정**: `app/src/app/page.tsx`
 
 ```typescript
 'use client';

@@ -789,7 +789,7 @@ export function OptimizedImage({ src, alt }: { src: string; alt: string }) {
 **코드 스플리팅**
 
 ```typescript
-// app/src/app/calculator/page.tsx
+// app/src/app/page.tsx
 
 import dynamic from 'next/dynamic';
 
