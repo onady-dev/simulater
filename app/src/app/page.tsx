@@ -8,6 +8,10 @@ import { PeriodStepCard } from '@/components/inputs/PeriodStepCard';
 import { AutoRecommendation } from '@/components/results/AutoRecommendation';
 import { AssetProjectionChart } from '@/components/charts/AssetProjectionChart';
 import { MonthlyCostSummary } from '@/components/results/MonthlyCostSummary';
+import { TopBannerAd } from '@/components/ads/TopBannerAd';
+import { InContentAd } from '@/components/ads/InContentAd';
+import { StickyBottomAd } from '@/components/ads/StickyBottomAd';
+import { AdBlockDetector } from '@/components/ads/AdBlockDetector';
 
 export default function CalculatorPage() {
   const calculate = useCalculatorStore((s) => s.calculate);
@@ -20,12 +24,18 @@ export default function CalculatorPage() {
     <div className="min-h-screen bg-gray-50">
       <TopBar />
 
+      {/* 상단 배너 광고 */}
+      <TopBannerAd />
+
       <main className="pb-10 pt-4">
         {/* 입력 섹션 */}
         <section className="px-4 space-y-3 mb-4">
           <PriceStepCard />
           <PeriodStepCard />
         </section>
+
+        {/* 콘텐츠 중간 광고 */}
+        <InContentAd />
 
         {/* 추천 결과 */}
         <AutoRecommendation />
@@ -42,6 +52,12 @@ export default function CalculatorPage() {
           ※ 공시가격은 시세의 70% 근사치 적용. 본 계산기는 참고용이며 법적 효력이 없습니다.
         </p>
       </main>
+
+      {/* 하단 고정 광고 */}
+      <StickyBottomAd />
+
+      {/* 광고 차단기 감지 */}
+      <AdBlockDetector />
     </div>
   );
 }

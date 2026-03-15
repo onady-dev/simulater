@@ -62,3 +62,9 @@ input[type='range']::-moz-range-thumb {
     padding-bottom: env(safe-area-inset-bottom, 16px);
   }
 }
+
+/* 광고 레이아웃 보호 */
+.adsbygoogle {
+  max-width: 100%;
+  overflow: hidden;
+}

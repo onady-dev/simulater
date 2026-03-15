@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
+import { AdSenseScript } from '@/components/ads/AdSenseScript';
+import { GoogleAnalytics } from '@/components/analytics/GoogleAnalytics';
+import { CookieConsent } from '@/components/legal/CookieConsent';
 
 const geistSans = localFont({
   src: './fonts/GeistVF.woff',
@@ -29,7 +32,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
-      <body className={`${geistSans.variable} antialiased`}>{children}</body>
+      <head>
+        <AdSenseScript />
+        <GoogleAnalytics
+          measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID ?? ''}
+        />
+      </head>
+      <body className={`${geistSans.variable} antialiased`}>
+        {children}
+        <CookieConsent />
+      </body>
     </html>
   );
 }

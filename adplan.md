@@ -1354,18 +1354,18 @@ export function RevenueCalculator() {
 
 ### Week 1: 기본 구현
 - [ ] AdSense 계정 생성
-- [ ] 광고 컴포넌트 개발 (AdUnit, TopBannerAd 등)
-- [ ] Layout 통합
+- [x] 광고 컴포넌트 개발 (AdUnit, TopBannerAd 등)
+- [x] Layout 통합
 - [ ] 로컬 테스트
 
 ### Week 2: 법적 준수 및 최적화
-- [ ] 쿠키 동의 배너 구현
-- [ ] 개인정보 처리방침 페이지 작성
-- [ ] Google Analytics 통합
-- [ ] 광고 차단기 감지 구현
+- [x] 쿠키 동의 배너 구현
+- [x] 개인정보 처리방침 페이지 작성
+- [x] Google Analytics 통합
+- [x] 광고 차단기 감지 구현
 
 ### Week 3: 배포 및 승인 신청
-- [ ] 프로덕션 빌드
+- [x] 프로덕션 빌드
 - [ ] S3/CloudFront 배포
 - [ ] AdSense 사이트 승인 신청
 - [ ] 승인 대기
