@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KLEVX - 집 살까? 전세 살까? 매수·전세·월세 비교 계산기</title>
+  <meta name="description" content="매수, 전세, 월세 중 나에게 유리한 선택은? 취득세, 대출이자, 기회비용, 시세 상승까지 반영한 실질 주거비 비교 계산기">
+  <link rel="canonical" href="https://klevx.com">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#1a1a2e;line-height:1.7;background:#f8f9fa}
+    a{color:#3a86ff;text-decoration:none}a:hover{text-decoration:underline}
+    header{background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:3.5rem 1rem;text-align:center}
+    header h1{font-size:2rem;margin-bottom:0.3rem}
+    header .sub{font-size:1.3rem;opacity:0.9;font-weight:600}
+    header p{font-size:1rem;opacity:0.7;max-width:550px;margin:0.8rem auto 1.5rem}
+    .cta{display:inline-block;padding:0.8rem 2rem;background:#3a86ff;color:#fff;border-radius:10px;font-weight:700;font-size:1rem}
+    .cta:hover{background:#2a6fdf;text-decoration:none}
+    main{max-width:800px;margin:0 auto;padding:2rem 1rem}
+    .card{background:#fff;border-radius:14px;padding:1.8rem;margin-bottom:1.2rem;box-shadow:0 2px 8px rgba(0,0,0,0.05)}
+    .card h2{font-size:1.2rem;margin-bottom:0.7rem;color:#16213e}
+    .card p,.card li{color:#444;font-size:0.95rem}
+    .card ul{padding-left:1.2rem;margin-top:0.5rem}
+    .card li{margin-bottom:0.3rem}
+    .scenarios{display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-top:1rem}
+    .scenario{border-radius:10px;padding:1.2rem;text-align:center}
+    .scenario h3{font-size:1rem;margin-bottom:0.3rem}
+    .scenario p{font-size:0.82rem;color:#555}
+    .s-buy{background:#EFF6FF;border:1px solid #BFDBFE}.s-buy h3{color:#3B82F6}
+    .s-jeonse{background:#FFFBEB;border:1px solid #FDE68A}.s-jeonse h3{color:#D97706}
+    .s-rent{background:#F5F3FF;border:1px solid #DDD6FE}.s-rent h3{color:#7C3AED}
+    .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0.8rem;margin-top:1rem}
+    .feat{background:#f0f4ff;border-radius:10px;padding:1rem;text-align:center}
+    .feat .icon{font-size:1.5rem;margin-bottom:0.3rem}
+    .feat h3{font-size:0.9rem;margin-bottom:0.2rem}
+    .feat p{font-size:0.8rem;color:#666}
+    footer{text-align:center;padding:2rem 1rem;color:#888;font-size:0.85rem;border-top:1px solid #e9ecef;margin-top:2rem}
+    footer a{color:#888}
+    @media(max-width:600px){header h1{font-size:1.5rem}header .sub{font-size:1.1rem}.scenarios{grid-template-columns:1fr}.card{padding:1.2rem}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>KLEVX</h1>
+    <p class="sub">집 살까? 전세 살까? 월세 살까?</p>
+    <p>같은 조건에서 매수·전세·월세의 실질 주거비를 한눈에 비교하고, 나에게 가장 유리한 선택을 찾아보세요</p>
+    <a href="https://calculator.klevx.com" class="cta">무료로 비교해보기 →</a>
+  </header>
+  <main>
+    <section class="card">
+      <h2>세 가지 시나리오를 한 번에 비교</h2>
+      <p>매매가, 전세 보증금, 월세를 입력하면 각 시나리오의 총 비용과 순자산 변화를 자동으로 계산합니다.</p>
+      <div class="scenarios">
+        <div class="scenario s-buy">
+          <h3>🏠 매수</h3>
+          <p>취득세·재산세·대출이자·시세 상승 이익까지 반영한 실질 주거비</p>
+        </div>
+        <div class="scenario s-jeonse">
+          <h3>🔑 전세</h3>
+          <p>전세대출 이자·보증보험료·기회비용을 포함한 총 비용</p>
+        </div>
+        <div class="scenario s-rent">
+          <h3>📋 월세</h3>
+          <p>보증금 기회비용·월 임차료 누적·세액공제 반영</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>단순 월세 비교가 아닙니다</h2>
+      <p>실제 의사결정에 필요한 숨은 비용까지 모두 계산합니다.</p>
+      <div class="features">
+        <div class="feat">
+          <div class="icon">📊</div>
+          <h3>순자산 추이 차트</h3>
+          <p>보유 기간별 매수·전세·월세 순자산 변화를 시각적으로 비교</p>
+        </div>
+        <div class="feat">
+          <div class="icon">💰</div>
+          <h3>기회비용 반영</h3>
+          <p>자기자본을 투자했을 때의 수익까지 고려한 실질 비용</p>
+        </div>
+        <div class="feat">
+          <div class="icon">🏦</div>
+          <h3>대출 상환 시뮬레이션</h3>
+          <p>원리금균등·원금균등·만기일시 상환 방식별 이자 계산</p>
+        </div>
+        <div class="feat">
+          <div class="icon">📈</div>
+          <h3>레버리지 효과</h3>
+          <p>LTV 비율에 따른 자기자본 수익률 변화 시뮬레이션</p>
+        </div>
+        <div class="feat">
+          <div class="icon">🧾</div>
+          <h3>세금 자동 계산</h3>
+          <p>취득세·재산세·종합부동산세·양도소득세 자동 반영</p>
+        </div>
+        <div class="feat">
+          <div class="icon">⚖️</div>
+          <h3>AI 추천</h3>
+          <p>입력 조건 기반으로 가장 유리한 시나리오를 자동 추천</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>이런 고민이 있다면</h2>
+      <ul>
+        <li>내 자금으로 집을 사는 게 나을까, 전세가 나을까?</li>
+        <li>대출 이자를 내면서 집을 사는 게 정말 이득일까?</li>
+        <li>전세 보증금을 투자에 넣으면 월세보다 유리할까?</li>
+        <li>몇 년을 살아야 매수가 전세보다 유리해질까?</li>
+        <li>집값이 얼마나 올라야 매수가 손해가 아닐까?</li>
+      </ul>
+      <p style="margin-top:1rem">
+        <a href="https://calculator.klevx.com" class="cta">지금 바로 계산해보기 →</a>
+      </p>
+    </section>
+  </main>
+  <footer>
+    <p>&copy; 2026 KLEVX. All rights reserved. | <a href="/privacy.html">개인정보처리방침</a></p>
+  </footer>
+</body>
+</html>
