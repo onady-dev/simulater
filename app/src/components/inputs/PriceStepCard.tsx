@@ -80,10 +80,10 @@ export function PriceStepCard() {
   return (
     <>
       <div className="space-y-3">
-        {/* 월 저축 가능 금액 */}
+        {/* 월 가용 가능 금액 */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="text-base font-bold text-gray-900">월 저축 가능 금액</h3>
+            <h3 className="text-base font-bold text-gray-900">월 가용 가능 금액</h3>
             <span className="text-2xl font-bold text-gray-900">
               {formatWonCompact(buyInputs.monthlySavings)}
             </span>
