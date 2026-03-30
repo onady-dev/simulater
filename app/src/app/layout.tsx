@@ -10,8 +10,8 @@ const geistSans = localFont({
 });
 
 export const metadata: Metadata = {
-  title: '집 살까? 전세 살까?',
-  description: '매수 vs 전세 vs 월세 — 어떤 선택이 유리한지 계산해보세요',
+  title: '집사요말아요',
+  description: '월세vs전세vs매매 데이터로 비교 추천 해드림',
   manifest: '/manifest.json',
 };
 
