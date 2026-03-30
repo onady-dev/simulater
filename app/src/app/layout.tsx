@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
+import Script from 'next/script';
 import './globals.css';
 
 const geistSans = localFont({
@@ -29,6 +30,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko">
+      <head>
+        <Script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5193384768393169"
+          crossOrigin="anonymous"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className={`${geistSans.variable} antialiased`}>{children}</body>
     </html>
   );

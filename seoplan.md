@@ -357,7 +357,7 @@ export function BreadcrumbSchema({ items }: BreadcrumbSchemaProps) {
 }
 ```
 
-**Calculator Page에 통합**: `app/src/app/calculator/page.tsx`
+**Calculator Page에 통합**: `app/src/app/page.tsx`
 
 ```typescript
 import { StructuredData } from '@/components/seo/StructuredData';
@@ -462,7 +462,7 @@ export function generateMetadata(page: {
 }
 ```
 
-**Calculator Page 메타데이터**: `app/src/app/calculator/page.tsx`
+**Calculator Page 메타데이터**: `app/src/app/page.tsx`
 
 ```typescript
 import { Metadata } from 'next';
@@ -571,7 +571,7 @@ export function AdUnit({ adSlot }: { adSlot: string }) {
 }
 ```
 
-**동적 import로 코드 스플리팅**: `app/src/app/calculator/page.tsx`
+**동적 import로 코드 스플리팅**: `app/src/app/page.tsx`
 
 ```typescript
 import dynamic from 'next/dynamic';
