@@ -35,7 +35,7 @@ export interface BuyInputs {
   isFirstHomeBuyer: boolean;
   isRegulatedZone: boolean;
   expectedInvestmentReturn: Rate; // 자기자본 기회비용 계산용 투자수익률
-  monthlySavings: Won;      // 월 가용 가능 금액
+  monthlySavings: Won;      // 월 저축 가능 금액
   // 사용자 직접 입력 여부 플래그
   userSetPriceChangeRate?: boolean;
   userSetLoanRate?: boolean;
@@ -51,7 +51,7 @@ export interface JeonseInputs {
   expectedInvestmentReturn: Rate;
   availableCash: Won;       // 현재 보유 자산 (가용 가능 현금)
   rentGrowthRate?: Rate;
-  monthlySavings: Won;      // 월 가용 가능 금액
+  monthlySavings: Won;      // 월 저축 가능 금액
   // 사용자 직접 입력 여부 플래그
   userSetLoanRate?: boolean;
   userSetInvestmentReturn?: boolean;
@@ -64,7 +64,7 @@ export interface MonthlyRentInputs {
   expectedInvestmentReturn: Rate;
   availableCash: Won;       // 현재 보유 자산 (가용 가능 현금)
   areaM2: number;
-  monthlySavings: Won;      // 월 가용 가능 금액
+  monthlySavings: Won;      // 월 저축 가능 금액
   rentGrowthRate?: Rate;
   marketPrice: Won;
   // 사용자 직접 입력 여부 플래그
@@ -194,6 +194,8 @@ export interface PresetOption {
 // ─── 인플레이션 시나리오 ─────────────────────────────────────────────────────
 
 export type InflationScenario = 'low' | 'medium' | 'high';
+
+export type CalculationPhase = 'idle' | 'loading' | 'result';
 
 export interface InflationParameters {
   inflationRate: Rate;
