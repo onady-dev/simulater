@@ -52,6 +52,10 @@ function estimateMaxBuyLoan(purchasePrice: number): number {
   return Math.floor(purchasePrice * 0.7);
 }
 
+function estimateMaxJeonseLoan(depositAmount: number): number {
+  return Math.floor(depositAmount * 0.8);
+}
+
 function getAffordabilityCopy(
   affordability: ReturnType<typeof checkAffordability>,
   monthlySavings: number,
@@ -465,7 +469,7 @@ export function PriceStepCard() {
                 const v = Math.max(50_000_000, jeonseInputs.depositAmount - 10_000_000);
                 updateJeonseInputs({
                   depositAmount: v,
-                  loanAmount: Math.max(0, v - buyInputs.availableCash),
+                  loanAmount: estimateMaxJeonseLoan(v),
                 });
               }}
               className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -482,7 +486,7 @@ export function PriceStepCard() {
                 const v = Number(e.target.value);
                 updateJeonseInputs({
                   depositAmount: v,
-                  loanAmount: Math.max(0, v - buyInputs.availableCash),
+                  loanAmount: estimateMaxJeonseLoan(v),
                 });
               }}
               className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
@@ -492,7 +496,7 @@ export function PriceStepCard() {
                 const v = Math.min(2_000_000_000, jeonseInputs.depositAmount + 10_000_000);
                 updateJeonseInputs({
                   depositAmount: v,
-                  loanAmount: Math.max(0, v - buyInputs.availableCash),
+                  loanAmount: estimateMaxJeonseLoan(v),
                 });
               }}
               className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -513,7 +517,7 @@ export function PriceStepCard() {
                 onClick={() => {
                   updateJeonseInputs({
                     depositAmount: value,
-                    loanAmount: Math.max(0, value - buyInputs.availableCash),
+                    loanAmount: estimateMaxJeonseLoan(value),
                   });
                 }}
                 className={`py-2 rounded-xl text-xs font-medium transition-colors ${
