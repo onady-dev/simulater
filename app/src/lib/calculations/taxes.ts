@@ -16,6 +16,7 @@ export function calculateAcquisitionTax(
   numHomes: HomeOwnerCount,
   areaM2: number,
   isFirstHomeBuyer: boolean,
+  isRegulatedZone: boolean = false,
 ): {
   baseTax: number;
   localEducationTax: number;
@@ -28,19 +29,23 @@ export function calculateAcquisitionTax(
   if (numHomes >= 3) {
     baseRate = 0.12;
   } else if (numHomes === 2) {
-    if (purchasePrice <= 600_000_000) {
-      baseRate = 0.01;
-    } else if (purchasePrice <= 900_000_000) {
-      baseRate = ((purchasePrice / 100_000_000) * 2 - 3) / 100;
+    if (isRegulatedZone) {
+      baseRate = 0.08;
     } else {
-      baseRate = 0.03;
+      if (purchasePrice <= 600_000_000) {
+        baseRate = 0.01;
+      } else if (purchasePrice <= 900_000_000) {
+        baseRate = (((purchasePrice / 100_000_000) * 2) / 3 - 3) / 100;
+      } else {
+        baseRate = 0.03;
+      }
     }
   } else {
     // 1주택
     if (purchasePrice <= 600_000_000) {
       baseRate = 0.01;
     } else if (purchasePrice <= 900_000_000) {
-      baseRate = ((purchasePrice / 100_000_000) * 2 - 3) / 100;
+      baseRate = (((purchasePrice / 100_000_000) * 2) / 3 - 3) / 100;
     } else {
       baseRate = 0.03;
     }

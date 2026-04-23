@@ -36,8 +36,15 @@ export function calculateBuyInitialCosts(
   numHomes: HomeOwnerCount,
   areaM2: number,
   isFirstHomeBuyer: boolean,
+  isRegulatedZone: boolean,
 ): number {
-  const acqTax = calculateAcquisitionTax(purchasePrice, numHomes, areaM2, isFirstHomeBuyer);
+  const acqTax = calculateAcquisitionTax(
+    purchasePrice,
+    numHomes,
+    areaM2,
+    isFirstHomeBuyer,
+    isRegulatedZone,
+  );
   const buyAgentFee = calculateBuyAgentFee(purchasePrice);
   const legalFee = estimateLegalFee(purchasePrice);
   const bondDiscount = estimateBondDiscountCost(purchasePrice);
@@ -58,11 +65,18 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
     yearsToHold,
     annualPriceChangeRate,
     isFirstHomeBuyer,
+    isRegulatedZone,
     expectedInvestmentReturn,
   } = inputs;
 
   // 초기 비용
-  const acqTax = calculateAcquisitionTax(purchasePrice, numHomes, areaM2, isFirstHomeBuyer);
+  const acqTax = calculateAcquisitionTax(
+    purchasePrice,
+    numHomes,
+    areaM2,
+    isFirstHomeBuyer,
+    isRegulatedZone,
+  );
   const buyAgentFee = calculateBuyAgentFee(purchasePrice);
   const legalFee = estimateLegalFee(purchasePrice);
   const bondDiscount = estimateBondDiscountCost(purchasePrice);
@@ -85,7 +99,7 @@ export function calculateBuyScenario(inputs: BuyInputs): CostBreakdown {
   const avgComprehensiveTax = Math.floor(totalComprehensiveTax / yearsToHold);
   
   const loanSchedule = calculateLoanRepayment(loanAmount, loanRate, loanType, 30, yearsToHold);
-  const annualLoanInterest = loanSchedule.yearlyInterestSchedule[0] ?? 0;
+  const annualLoanInterest = Math.floor(loanSchedule.totalInterestPaid / yearsToHold);
   const annualHoldingTotal = avgPropertyTax + avgComprehensiveTax + annualLoanInterest;
 
   // 처분 비용

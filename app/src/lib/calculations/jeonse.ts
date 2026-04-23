@@ -58,7 +58,8 @@ export function calculateJeonseScenario(inputs: JeonseInputs): JeonseCostBreakdo
       totalOpportunityCost += Math.floor(ownDeposit * expectedInvestmentReturn);
     }
   } else {
-    totalOpportunityCost = Math.floor(depositAmount * expectedInvestmentReturn * yearsToHold);
+    const ownDeposit = Math.max(0, depositAmount - loanAmount);
+    totalOpportunityCost = Math.floor(ownDeposit * expectedInvestmentReturn * yearsToHold);
   }
 
   const periodicTotal = totalLoanInterest + totalOpportunityCost;

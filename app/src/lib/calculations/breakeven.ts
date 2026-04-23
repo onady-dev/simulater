@@ -81,8 +81,13 @@ export function calculateMonthlyExpense(
 ): number {
   if (scenario === 'buy') {
     const buyInputs = inputs as BuyInputs;
-    const loanAmount = Math.max(0, buyInputs.purchasePrice - buyInputs.availableCash);
-    const loanSchedule = calculateLoanRepayment(loanAmount, buyInputs.loanRate, buyInputs.loanType, 30, 1);
+    const loanSchedule = calculateLoanRepayment(
+      buyInputs.loanAmount,
+      buyInputs.loanRate,
+      buyInputs.loanType,
+      30,
+      1,
+    );
     const monthlyLoanPayment = loanSchedule.monthlyPayment;
     const monthlyTax = (calculatePropertyTax(buyInputs.purchasePrice) + calculateComprehensiveRealEstateTax(buyInputs.purchasePrice, buyInputs.numHomes)) / 12;
     return monthlyLoanPayment + monthlyTax;
@@ -90,8 +95,7 @@ export function calculateMonthlyExpense(
   
   if (scenario === 'jeonse') {
     const jeonseInputs = inputs as JeonseInputs;
-    const loanAmount = Math.max(0, jeonseInputs.depositAmount - jeonseInputs.availableCash);
-    const monthlyInterest = (loanAmount * jeonseInputs.loanRate) / 12;
+    const monthlyInterest = (jeonseInputs.loanAmount * jeonseInputs.loanRate) / 12;
     return monthlyInterest;
   }
   
@@ -110,12 +114,64 @@ export function checkAffordability(
   scenario: 'buy' | 'jeonse' | 'monthlyRent',
   inputs: BuyInputs | JeonseInputs | MonthlyRentInputs,
   monthlySavings: number,
-): { isAffordable: boolean; monthlyExpense: number; deficit: number } {
+): {
+  isAffordable: boolean;
+  monthlyExpense: number;
+  deficit: number;
+  requiredCash: number;
+  upfrontShortfall: number;
+  hasEnoughMonthlyCash: boolean;
+  hasEnoughUpfrontCash: boolean;
+} {
   const monthlyExpense = calculateMonthlyExpense(scenario, inputs);
+  let requiredCash = 0;
+
+  if (scenario === 'buy') {
+    const buyInputs = inputs as BuyInputs;
+    requiredCash =
+      Math.max(0, buyInputs.purchasePrice - buyInputs.loanAmount) +
+      calculateBuyInitialCosts(
+        buyInputs.purchasePrice,
+        buyInputs.numHomes,
+        buyInputs.areaM2,
+        buyInputs.isFirstHomeBuyer,
+        buyInputs.isRegulatedZone,
+      );
+  } else if (scenario === 'jeonse') {
+    const jeonseInputs = inputs as JeonseInputs;
+    requiredCash =
+      Math.max(0, jeonseInputs.depositAmount - jeonseInputs.loanAmount) +
+      calculateRentAgentFee(jeonseInputs.depositAmount) +
+      calcInsurancePremium(
+        jeonseInputs.depositAmount,
+        jeonseInputs.insuranceProvider,
+        jeonseInputs.yearsToHold,
+      );
+  } else {
+    const rentInputs = inputs as MonthlyRentInputs;
+    requiredCash =
+      rentInputs.depositAmount +
+      calculateRentAgentFee(
+        rentInputs.depositAmount + rentInputs.monthlyRent * 100,
+      );
+  }
+
   const deficit = monthlyExpense - monthlySavings;
-  const isAffordable = deficit <= 0;
+  const availableCash = inputs.availableCash;
+  const upfrontShortfall = requiredCash - availableCash;
+  const hasEnoughMonthlyCash = deficit <= 0;
+  const hasEnoughUpfrontCash = upfrontShortfall <= 0;
+  const isAffordable = hasEnoughMonthlyCash && hasEnoughUpfrontCash;
   
-  return { isAffordable, monthlyExpense, deficit };
+  return {
+    isAffordable,
+    monthlyExpense,
+    deficit,
+    requiredCash,
+    upfrontShortfall,
+    hasEnoughMonthlyCash,
+    hasEnoughUpfrontCash,
+  };
 }
 
 /**
@@ -131,21 +187,38 @@ export function generateAssetProjectionSeries(
   jeonseInputs: JeonseInputs,
   monthlyRentInputs: MonthlyRentInputs,
 ): AssetProjectionPoint[] {
-  const { purchasePrice, loanRate, loanType, annualPriceChangeRate, yearsToHold, availableCash, numHomes, monthlySavings } =
-    buyInputs;
-  const r = buyInputs.expectedInvestmentReturn;
+  const {
+    purchasePrice,
+    loanAmount,
+    loanRate,
+    loanType,
+    annualPriceChangeRate,
+    yearsToHold,
+    availableCash,
+    numHomes,
+    monthlySavings,
+  } = buyInputs;
+  const buyRate = buyInputs.expectedInvestmentReturn;
+  const jeonseRate = jeonseInputs.expectedInvestmentReturn;
+  const rentRate = monthlyRentInputs.expectedInvestmentReturn;
   const rentGrowthRate = monthlyRentInputs.rentGrowthRate ?? 0;
   const jeonseGrowthRate = jeonseInputs.rentGrowthRate ?? 0;
   const LEGAL_CAP = 0.05;
   const CONTRACT_PERIOD = 2;
 
   // 대출금 자동 계산
-  const buyLoanAmount = Math.max(0, purchasePrice - availableCash);
-  const jeonseLoanAmount = Math.max(0, jeonseInputs.depositAmount - availableCash);
+  const buyLoanAmount = loanAmount;
+  const jeonseLoanAmount = jeonseInputs.loanAmount;
 
   // 초기 여유금 계산
-  const buyInitialInvestable = Math.max(0, availableCash - purchasePrice);
-  const jeonseInitialInvestable = Math.max(0, availableCash - jeonseInputs.depositAmount);
+  const buyInitialInvestable = Math.max(
+    0,
+    availableCash - Math.max(0, purchasePrice - buyLoanAmount),
+  );
+  const jeonseInitialInvestable = Math.max(
+    0,
+    availableCash - Math.max(0, jeonseInputs.depositAmount - jeonseLoanAmount),
+  );
   const rentInitialInvestable = Math.max(0, availableCash - monthlyRentInputs.depositAmount);
 
   // 초기 비용 계산 (1회만)
@@ -153,7 +226,8 @@ export function generateAssetProjectionSeries(
     purchasePrice,
     numHomes,
     buyInputs.areaM2,
-    buyInputs.isFirstHomeBuyer
+    buyInputs.isFirstHomeBuyer,
+    buyInputs.isRegulatedZone,
   );
   
   const jeonseAgentFee = calculateRentAgentFee(jeonseInputs.depositAmount);
@@ -178,11 +252,11 @@ export function generateAssetProjectionSeries(
     const buyMonthlyExpense = buyMonthlyLoanPayment + buyMonthlyTax;
     
     // 연도별 저축액 계산
-    let buyFinancialAsset = buyInitialInvestable * Math.pow(1 + r, year);
+    let buyFinancialAsset = buyInitialInvestable * Math.pow(1 + buyRate, year);
     for (let y = 1; y <= year; y++) {
       const actualSavings = Math.max(0, monthlySavings - buyMonthlyExpense);
       const remainingYears = year - y;
-      const yearlyContribution = actualSavings * 12 * Math.pow(1 + r, remainingYears);
+      const yearlyContribution = actualSavings * 12 * Math.pow(1 + buyRate, remainingYears);
       buyFinancialAsset += yearlyContribution;
     }
     
@@ -194,7 +268,7 @@ export function generateAssetProjectionSeries(
     const jeonseIncreaseRate = jeonseGrowthRate > 0 ? Math.min(jeonseGrowthRate, LEGAL_CAP) : 0;
     
     // 연도별 보증금 인상액과 저축액 계산
-    let jeonseFinancialAsset = jeonseInitialInvestable * Math.pow(1 + r, year);
+    let jeonseFinancialAsset = jeonseInitialInvestable * Math.pow(1 + jeonseRate, year);
     let currentJeonseDeposit = jeonseInputs.depositAmount;
     
     for (let y = 1; y <= year; y++) {
@@ -206,20 +280,20 @@ export function generateAssetProjectionSeries(
         
         // 보증금 인상액은 해당 시점에 금융자산에서 차감되고, 남은 기간만큼 기회비용 발생
         const remainingYears = year - y;
-        jeonseFinancialAsset -= depositIncrease * Math.pow(1 + r, remainingYears);
+        jeonseFinancialAsset -= depositIncrease * Math.pow(1 + jeonseRate, remainingYears);
       }
       
       // 해당 연도의 월 저축액
       const actualSavings = Math.max(0, monthlySavings - jeonseMonthlyInterest);
       const remainingYears = year - y;
-      const yearlyContribution = actualSavings * 12 * Math.pow(1 + r, remainingYears);
+      const yearlyContribution = actualSavings * 12 * Math.pow(1 + jeonseRate, remainingYears);
       jeonseFinancialAsset += yearlyContribution;
     }
     const jeonseNetAsset = Math.round(jeonseFinancialAsset - jeonseInitialCosts + currentJeonseDeposit - jeonseLoanAmount);
 
     // ===== 월세 순자산 =====
     // 월세: 2년마다 재계약 시 법정 상한 적용, 연도별 실제 월세 반영
-    let rentFinancialAsset = rentInitialInvestable * Math.pow(1 + r, year);
+    let rentFinancialAsset = rentInitialInvestable * Math.pow(1 + rentRate, year);
     const rentIncreaseRate = rentGrowthRate > 0 ? Math.min(rentGrowthRate, LEGAL_CAP) : 0;
     
     for (let y = 1; y <= year; y++) {
@@ -229,7 +303,7 @@ export function generateAssetProjectionSeries(
       
       // 해당 연도의 월 저축액을 남은 기간만큼 복리 운용
       const remainingYears = year - y;
-      const yearlyContribution = actualSavings * 12 * Math.pow(1 + r, remainingYears);
+      const yearlyContribution = actualSavings * 12 * Math.pow(1 + rentRate, remainingYears);
       rentFinancialAsset += yearlyContribution;
     }
     

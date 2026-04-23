@@ -181,7 +181,6 @@ export interface CalculationResults {
   yearlyCostSeries: YearlyCostDataPoint[];
   breakevenSeries: BreakevenDataPoint[];
   assetProjectionSeries: AssetProjectionPoint[];
-  recommendation: ScenarioKey;
 }
 
 // ─── 바텀시트 프리셋 ─────────────────────────────────────────────────────────

@@ -11,7 +11,6 @@ const BORDER_COLORS = { buy: 'border-blue-100', jeonse: 'border-amber-100', mont
 
 export function MonthlyCostSummary() {
   const results = useCalculatorStore((s) => s.results);
-  const yearsToHold = useCalculatorStore((s) => s.buyInputs.yearsToHold);
   const monthlyRent = useCalculatorStore((s) => s.monthlyRentInputs.monthlyRent);
   const buyInputs = useCalculatorStore((s) => s.buyInputs);
   const jeonseInputs = useCalculatorStore((s) => s.jeonseInputs);
@@ -25,8 +24,8 @@ export function MonthlyCostSummary() {
   const rentAffordability = checkAffordability('monthlyRent', monthlyRentInputs, monthlyRentInputs.monthlySavings);
 
   // 예상 월 지출 비용 (실제 현금 지출 기준)
-  const buyMonthly = Math.round(results.buy.annualHoldingCosts.total / 12);
-  const jeonseMonthly = Math.round(results.jeonse.periodicCosts.loanInterest / yearsToHold / 12);
+  const buyMonthly = Math.round(buyAffordability.monthlyExpense);
+  const jeonseMonthly = Math.round(jeonseAffordability.monthlyExpense);
   const rentMonthly = monthlyRent;
 
   const items = [

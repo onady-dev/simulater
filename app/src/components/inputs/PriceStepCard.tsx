@@ -48,6 +48,55 @@ const MONTHLY_SAVINGS_PRESETS = [
   { label: '500만', value: 5_000_000 },
 ];
 
+function estimateMaxBuyLoan(purchasePrice: number): number {
+  return Math.floor(purchasePrice * 0.7);
+}
+
+function getAffordabilityCopy(
+  affordability: ReturnType<typeof checkAffordability>,
+  monthlySavings: number,
+  availableCash: number,
+  scenarioGuide: string,
+  options?: {
+    equityNeeded?: number;
+    scenarioLabel?: string;
+  },
+) {
+  const messages: string[] = [];
+
+  if (!affordability.hasEnoughMonthlyCash) {
+    messages.push(
+      `월 예상 지출 ${formatWonCompact(affordability.monthlyExpense)}이 월 추가 저축 가능액 ${formatWonCompact(monthlySavings)}을 초과합니다. ${formatWonCompact(Math.max(0, affordability.deficit))} 부족합니다.`,
+    );
+  }
+
+  if (!affordability.hasEnoughUpfrontCash) {
+    const equityNeeded = options?.equityNeeded ?? affordability.requiredCash;
+    const extraCosts = Math.max(0, affordability.requiredCash - equityNeeded);
+
+    if (availableCash >= equityNeeded && extraCosts > 0) {
+      messages.push(
+        `${options?.scenarioLabel ?? '거래'} 대금은 가능하지만 부대비용 ${formatWonCompact(extraCosts)}이 추가로 필요합니다. ${formatWonCompact(Math.max(0, affordability.upfrontShortfall))} 부족합니다.`,
+      );
+    } else {
+      messages.push(
+        `초기 필요 자금 ${formatWonCompact(affordability.requiredCash)}이 현재 보유 자산 ${formatWonCompact(availableCash)}을 초과합니다. ${formatWonCompact(Math.max(0, affordability.upfrontShortfall))} 부족합니다.`,
+      );
+    }
+  }
+
+  let guide = scenarioGuide;
+  if (!affordability.hasEnoughMonthlyCash && !affordability.hasEnoughUpfrontCash) {
+    guide = '월 추가 저축 가능액을 늘리거나 주거비와 초기 필요 자금을 함께 낮춰 보세요.';
+  } else if (!affordability.hasEnoughMonthlyCash) {
+    guide = '월 추가 저축 가능액을 늘리거나 월 부담이 더 낮은 조건으로 조정해 보세요.';
+  } else if (!affordability.hasEnoughUpfrontCash) {
+    guide = '보유 자산을 늘리거나 보증금·매수가·대출 구조를 다시 조정해 보세요.';
+  }
+
+  return { messages, guide };
+}
+
 export function PriceStepCard() {
   const [showBuyDetails, setShowBuyDetails] = useState(false);
   const [showJeonseDetails, setShowJeonseDetails] = useState(false);
@@ -61,14 +110,8 @@ export function PriceStepCard() {
 
   const syncMonthlySavings = useCalculatorStore((s) => s.syncMonthlySavings);
   const syncAvailableCash = (v: number) => {
-    updateBuyInputs({ 
-      availableCash: v,
-      loanAmount: Math.max(0, buyInputs.purchasePrice - v),
-    });
-    updateJeonseInputs({ 
-      availableCash: v,
-      loanAmount: Math.max(0, jeonseInputs.depositAmount - v),
-    });
+    updateBuyInputs({ availableCash: v });
+    updateJeonseInputs({ availableCash: v });
     updateMonthlyRentInputs({ availableCash: v });
   };
 
@@ -76,6 +119,28 @@ export function PriceStepCard() {
   const buyAffordability = checkAffordability('buy', buyInputs, buyInputs.monthlySavings);
   const jeonseAffordability = checkAffordability('jeonse', jeonseInputs, jeonseInputs.monthlySavings);
   const rentAffordability = checkAffordability('monthlyRent', monthlyRentInputs, monthlyRentInputs.monthlySavings);
+  const buyAffordabilityCopy = getAffordabilityCopy(
+    buyAffordability,
+    buyInputs.monthlySavings,
+    buyInputs.availableCash,
+    '월 추가 저축 가능액을 늘리거나 매수가와 대출 규모를 조정해 보세요.',
+    {
+      equityNeeded: Math.max(0, buyInputs.purchasePrice - buyInputs.loanAmount),
+      scenarioLabel: '매수',
+    },
+  );
+  const jeonseAffordabilityCopy = getAffordabilityCopy(
+    jeonseAffordability,
+    jeonseInputs.monthlySavings,
+    jeonseInputs.availableCash,
+    '월 추가 저축 가능액을 늘리거나 전세 보증금과 대출 규모를 조정해 보세요.',
+  );
+  const rentAffordabilityCopy = getAffordabilityCopy(
+    rentAffordability,
+    monthlyRentInputs.monthlySavings,
+    monthlyRentInputs.availableCash,
+    '월 추가 저축 가능액을 늘리거나 월세와 보증금을 조정해 보세요.',
+  );
 
   return (
     <>
@@ -204,7 +269,7 @@ export function PriceStepCard() {
             <div className="flex items-center gap-2">
               {!buyAffordability.isAffordable && (
                 <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
-                  ⚠️ 월 지출 초과
+                  조건 불만족
                 </span>
               )}
               <span className="text-2xl font-bold text-gray-900">
@@ -214,6 +279,18 @@ export function PriceStepCard() {
           </div>
 
           {!buyAffordability.isAffordable && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs text-red-700 font-medium">현재 입력값으로는 매수 조건을 충족하지 못합니다.</p>
+              {buyAffordabilityCopy.messages.map((message) => (
+                <p key={message} className="text-xs text-red-600 mt-1">
+                  {message}
+                </p>
+              ))}
+              <p className="text-xs text-gray-600 mt-1">{buyAffordabilityCopy.guide}</p>
+            </div>
+          )}
+
+          {false && !buyAffordability.isAffordable && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3">
               <p className="text-xs text-red-700 font-medium">
                 ⚠️ 월 지출({formatWonCompact(buyAffordability.monthlyExpense)})이 
@@ -234,7 +311,7 @@ export function PriceStepCard() {
                 const v = Math.max(100_000_000, buyInputs.purchasePrice - 10_000_000);
                 updateBuyInputs({
                   purchasePrice: v,
-                  loanAmount: Math.max(0, v - buyInputs.availableCash),
+                  loanAmount: estimateMaxBuyLoan(v),
                 });
               }}
               className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -251,7 +328,7 @@ export function PriceStepCard() {
                 const v = Number(e.target.value);
                 updateBuyInputs({
                   purchasePrice: v,
-                  loanAmount: Math.max(0, v - buyInputs.availableCash),
+                  loanAmount: estimateMaxBuyLoan(v),
                 });
               }}
               className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
@@ -261,7 +338,7 @@ export function PriceStepCard() {
                 const v = Math.min(3_000_000_000, buyInputs.purchasePrice + 10_000_000);
                 updateBuyInputs({
                   purchasePrice: v,
-                  loanAmount: Math.max(0, v - buyInputs.availableCash),
+                  loanAmount: estimateMaxBuyLoan(v),
                 });
               }}
               className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -282,7 +359,7 @@ export function PriceStepCard() {
                 onClick={() => {
                   updateBuyInputs({
                     purchasePrice: value,
-                    loanAmount: Math.max(0, value - buyInputs.availableCash),
+                    loanAmount: estimateMaxBuyLoan(value),
                   });
                 }}
                 className={`py-2 rounded-xl text-xs font-medium transition-colors ${
@@ -346,7 +423,7 @@ export function PriceStepCard() {
             <div className="flex items-center gap-2">
               {!jeonseAffordability.isAffordable && (
                 <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
-                  ⚠️ 월 지출 초과
+                  조건 불만족
                 </span>
               )}
               <span className="text-2xl font-bold text-gray-900">
@@ -356,6 +433,18 @@ export function PriceStepCard() {
           </div>
 
           {!jeonseAffordability.isAffordable && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs text-red-700 font-medium">현재 입력값으로는 전세 조건을 충족하지 못합니다.</p>
+              {jeonseAffordabilityCopy.messages.map((message) => (
+                <p key={message} className="text-xs text-red-600 mt-1">
+                  {message}
+                </p>
+              ))}
+              <p className="text-xs text-gray-600 mt-1">{jeonseAffordabilityCopy.guide}</p>
+            </div>
+          )}
+
+          {false && !jeonseAffordability.isAffordable && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3">
               <p className="text-xs text-red-700 font-medium">
                 ⚠️ 월 지출({formatWonCompact(jeonseAffordability.monthlyExpense)})이 
@@ -487,12 +576,24 @@ export function PriceStepCard() {
             <h3 className="text-base font-bold text-gray-900">월세 정보</h3>
             {!rentAffordability.isAffordable && (
               <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">
-                ⚠️ 월 지출 초과
+                조건 불만족
               </span>
             )}
           </div>
 
           {!rentAffordability.isAffordable && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+              <p className="text-xs text-red-700 font-medium">현재 입력값으로는 월세 조건을 충족하지 못합니다.</p>
+              {rentAffordabilityCopy.messages.map((message) => (
+                <p key={message} className="text-xs text-red-600 mt-1">
+                  {message}
+                </p>
+              ))}
+              <p className="text-xs text-gray-600 mt-1">{rentAffordabilityCopy.guide}</p>
+            </div>
+          )}
+
+          {false && !rentAffordability.isAffordable && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-3">
               <p className="text-xs text-red-700 font-medium">
                 ⚠️ 월 지출({formatWonCompact(rentAffordability.monthlyExpense)})이 

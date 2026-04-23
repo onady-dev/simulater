@@ -1,0 +1,9 @@
+[     542ms] [WARNING] AdSense head tag doesn't support data-nscript attribute. @ https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5193384768393169:220
+[     600ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3010/icon-192.png:0
+[     601ms] [ERROR] Error while trying to use the following icon from the Manifest: http://127.0.0.1:3010/icon-192.png (Download error or resource isn't a valid image) @ http://127.0.0.1:3010/:0
+[   56769ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://127.0.0.1:3010/icon-192.png:0
+[   56769ms] [ERROR] Error while trying to use the following icon from the Manifest: http://127.0.0.1:3010/icon-192.png (Download error or resource isn't a valid image) @ http://127.0.0.1:3010/calculator/:0
+[   74298ms] [WARNING] The width(-1) and height(-1) of chart should be greater than 0,
+       please check the style of container, or the props width(100%) and height(100%),
+       or add a minWidth(0) or minHeight(undefined) or use aspect(undefined) to control the
+       height and width. @ http://127.0.0.1:3010/_next/static/chunks/689-c3caf1e8382e1195.js:0

@@ -1,0 +1,107 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - paragraph [ref=e4]: KLEVX
+      - heading "집 살까? 전세 살까? 월세 살까?" [level=1] [ref=e5]
+      - paragraph [ref=e6]:
+        - text: 같은 조건에서 매수·전세·월세의 실질 주거비를 한눈에 비교하고,
+        - text: 나에게 가장 유리한 선택을 찾아보세요
+      - link "무료로 비교해보기 →" [ref=e7] [cursor=pointer]:
+        - /url: /calculator/
+    - main [ref=e8]:
+      - generic [ref=e9]:
+        - heading "세 가지 시나리오를 한 번에 비교" [level=2] [ref=e10]
+        - paragraph [ref=e11]: 매매가, 전세 보증금, 월세를 입력하면 각 시나리오의 총 비용과 순자산 변화를 자동으로 계산합니다.
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - paragraph [ref=e14]: 🏠
+            - paragraph [ref=e15]: 매수
+            - paragraph [ref=e16]: 취득세·재산세·대출이자·시세 상승 이익까지 반영한 실질 주거비
+          - generic [ref=e17]:
+            - paragraph [ref=e18]: 🔑
+            - paragraph [ref=e19]: 전세
+            - paragraph [ref=e20]: 전세대출 이자·보증보험료·기회비용을 포함한 총 비용
+          - generic [ref=e21]:
+            - paragraph [ref=e22]: 📋
+            - paragraph [ref=e23]: 월세
+            - paragraph [ref=e24]: 보증금 기회비용·월 임차료 누적·세액공제 반영
+      - generic [ref=e25]:
+        - heading "단순 월세 비교가 아닙니다" [level=2] [ref=e26]
+        - paragraph [ref=e27]: 실제 의사결정에 필요한 숨은 비용까지 모두 계산합니다.
+        - generic [ref=e28]:
+          - generic [ref=e29]:
+            - paragraph [ref=e30]: 📊
+            - paragraph [ref=e31]: 순자산 추이 차트
+            - paragraph [ref=e32]: 보유 기간별 매수·전세·월세 순자산 변화를 시각적으로 비교
+          - generic [ref=e33]:
+            - paragraph [ref=e34]: 💰
+            - paragraph [ref=e35]: 기회비용 반영
+            - paragraph [ref=e36]: 자기자본을 투자했을 때의 수익까지 고려한 실질 비용
+          - generic [ref=e37]:
+            - paragraph [ref=e38]: 🏦
+            - paragraph [ref=e39]: 대출 상환 시뮬레이션
+            - paragraph [ref=e40]: 원리금균등·원금균등·만기일시 상환 방식별 이자 계산
+          - generic [ref=e41]:
+            - paragraph [ref=e42]: 📈
+            - paragraph [ref=e43]: 레버리지 효과
+            - paragraph [ref=e44]: LTV 비율에 따른 자기자본 수익률 변화 시뮬레이션
+          - generic [ref=e45]:
+            - paragraph [ref=e46]: 🧾
+            - paragraph [ref=e47]: 세금 자동 계산
+            - paragraph [ref=e48]: 취득세·재산세·종합부동산세·양도소득세 자동 반영
+          - generic [ref=e49]:
+            - paragraph [ref=e50]: ⚖️
+            - paragraph [ref=e51]: AI 추천
+            - paragraph [ref=e52]: 입력 조건 기반으로 가장 유리한 시나리오를 자동 추천
+      - generic [ref=e53]:
+        - heading "이런 고민이 있다면" [level=2] [ref=e54]
+        - list [ref=e55]:
+          - listitem [ref=e56]:
+            - generic [ref=e57]: ›
+            - generic [ref=e58]: 내 자금으로 집을 사는 게 나을까, 전세가 나을까?
+          - listitem [ref=e59]:
+            - generic [ref=e60]: ›
+            - generic [ref=e61]: 대출 이자를 내면서 집을 사는 게 정말 이득일까?
+          - listitem [ref=e62]:
+            - generic [ref=e63]: ›
+            - generic [ref=e64]: 전세 보증금을 투자에 넣으면 월세보다 유리할까?
+          - listitem [ref=e65]:
+            - generic [ref=e66]: ›
+            - generic [ref=e67]: 몇 년을 살아야 매수가 전세보다 유리해질까?
+          - listitem [ref=e68]:
+            - generic [ref=e69]: ›
+            - generic [ref=e70]: 집값이 얼마나 올라야 매수가 손해가 아닐까?
+        - link "🏠 지금 바로 계산해보기" [ref=e72] [cursor=pointer]:
+          - /url: /calculator/
+      - generic [ref=e73]:
+        - heading "더 알아보기" [level=2] [ref=e74]
+        - generic [ref=e75]:
+          - link "매수·전세·월세 가이드 ›" [ref=e76] [cursor=pointer]:
+            - /url: /guide/
+            - generic [ref=e77]: 매수·전세·월세 가이드
+            - generic [ref=e78]: ›
+          - link "FAQ ›" [ref=e79] [cursor=pointer]:
+            - /url: /faq/
+            - generic [ref=e80]: FAQ
+            - generic [ref=e81]: ›
+          - link "용어 해설 ›" [ref=e82] [cursor=pointer]:
+            - /url: /terms/
+            - generic [ref=e83]: 용어 해설
+            - generic [ref=e84]: ›
+          - link "서비스 소개 ›" [ref=e85] [cursor=pointer]:
+            - /url: /about/
+            - generic [ref=e86]: 서비스 소개
+            - generic [ref=e87]: ›
+    - contentinfo [ref=e88]:
+      - navigation [ref=e89]:
+        - link "계산기" [ref=e90] [cursor=pointer]:
+          - /url: /calculator/
+        - link "가이드" [ref=e91] [cursor=pointer]:
+          - /url: /guide/
+        - link "FAQ" [ref=e92] [cursor=pointer]:
+          - /url: /faq/
+        - link "소개" [ref=e93] [cursor=pointer]:
+          - /url: /about/
+      - paragraph [ref=e94]: © 2025 KLEVX. All rights reserved.
+      - paragraph [ref=e95]: 본 계산기는 참고용이며 법적 효력이 없습니다.
+  - alert [ref=e96]

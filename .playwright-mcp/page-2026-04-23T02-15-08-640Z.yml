@@ -1,0 +1,168 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - link "집 살까? 전세 살까?" [ref=e5] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e6]:
+          - navigation [ref=e7]:
+            - link "가이드" [ref=e8] [cursor=pointer]:
+              - /url: /guide/
+            - link "FAQ" [ref=e9] [cursor=pointer]:
+              - /url: /faq/
+            - link "용어집" [ref=e10] [cursor=pointer]:
+              - /url: /terms/
+            - link "소개" [ref=e11] [cursor=pointer]:
+              - /url: /about/
+          - button "초기화" [ref=e12] [cursor=pointer]
+    - main [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - generic [ref=e17]:
+              - heading "월 가용 가능 금액" [level=3] [ref=e18]
+              - generic [ref=e19]: 200만
+            - generic [ref=e20]:
+              - button "−" [ref=e21] [cursor=pointer]
+              - slider [ref=e22] [cursor=pointer]: "2000000"
+              - button "+" [ref=e23] [cursor=pointer]
+            - generic [ref=e24]:
+              - generic [ref=e25]: 0원
+              - generic [ref=e26]: 1,000만
+            - generic [ref=e27]:
+              - button "100만" [ref=e28] [cursor=pointer]
+              - button "200만" [ref=e29] [cursor=pointer]
+              - button "300만" [ref=e30] [cursor=pointer]
+              - button "500만" [ref=e31] [cursor=pointer]
+            - paragraph [ref=e32]: 💡 매달 저축 가능한 금액을 입력하세요 (소득 - 생활비)
+          - generic [ref=e33]:
+            - generic [ref=e34]:
+              - heading "현재 보유 자산" [level=3] [ref=e35]
+              - generic [ref=e36]: 1.0억원
+            - generic [ref=e37]:
+              - button "−" [ref=e38] [cursor=pointer]
+              - slider [ref=e39] [cursor=pointer]: "100000000"
+              - button "+" [ref=e40] [cursor=pointer]
+            - generic [ref=e41]:
+              - generic [ref=e42]: 0억
+              - generic [ref=e43]: 20억
+            - generic [ref=e44]:
+              - button "1억" [ref=e45] [cursor=pointer]
+              - button "2억" [ref=e46] [cursor=pointer]
+              - button "3억" [ref=e47] [cursor=pointer]
+              - button "5억" [ref=e48] [cursor=pointer]
+            - paragraph [ref=e49]: 가용 가능 현금 (순자산 비교 기준)
+          - generic [ref=e50]:
+            - generic [ref=e51]:
+              - heading "매수 정보" [level=3] [ref=e52]
+              - generic [ref=e54]: 6.0억원
+            - generic [ref=e55]:
+              - button "−" [ref=e56] [cursor=pointer]
+              - slider [ref=e57] [cursor=pointer]: "600000000"
+              - button "+" [ref=e58] [cursor=pointer]
+            - generic [ref=e59]:
+              - generic [ref=e60]: 1억
+              - generic [ref=e61]: 30억
+            - generic [ref=e62]:
+              - button "3억" [ref=e63] [cursor=pointer]
+              - button "5억" [ref=e64] [cursor=pointer]
+              - button "7억" [ref=e65] [cursor=pointer]
+              - button "10억" [ref=e66] [cursor=pointer]
+            - button "대출 설정 펼치기" [ref=e67] [cursor=pointer]:
+              - text: 대출 설정 펼치기
+              - img [ref=e68]
+            - paragraph [ref=e70]: 매수 시나리오
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - heading "전세 정보" [level=3] [ref=e73]
+              - generic [ref=e75]: 4.5억원
+            - generic [ref=e76]:
+              - button "−" [ref=e77] [cursor=pointer]
+              - slider [ref=e78] [cursor=pointer]: "450000000"
+              - button "+" [ref=e79] [cursor=pointer]
+            - generic [ref=e80]:
+              - generic [ref=e81]: 0.5억
+              - generic [ref=e82]: 20억
+            - generic [ref=e83]:
+              - button "2억" [ref=e84] [cursor=pointer]
+              - button "3억" [ref=e85] [cursor=pointer]
+              - button "4.5억" [ref=e86] [cursor=pointer]
+              - button "6억" [ref=e87] [cursor=pointer]
+            - button "대출 설정 펼치기" [ref=e88] [cursor=pointer]:
+              - text: 대출 설정 펼치기
+              - img [ref=e89]
+            - paragraph [ref=e91]: 전세 시나리오
+          - generic [ref=e92]:
+            - heading "월세 정보" [level=3] [ref=e94]
+            - generic [ref=e95]:
+              - generic [ref=e96]:
+                - generic [ref=e97]: 보증금
+                - generic [ref=e98]: 5000만
+              - generic [ref=e99]:
+                - button "−" [ref=e100] [cursor=pointer]
+                - slider [ref=e101] [cursor=pointer]: "50000000"
+                - button "+" [ref=e102] [cursor=pointer]
+              - generic [ref=e103]:
+                - generic [ref=e104]: 0원
+                - generic [ref=e105]: 2억
+              - generic [ref=e106]:
+                - button "1천만" [ref=e107] [cursor=pointer]
+                - button "3천만" [ref=e108] [cursor=pointer]
+                - button "5천만" [ref=e109] [cursor=pointer]
+                - button "1억" [ref=e110] [cursor=pointer]
+            - generic [ref=e111]:
+              - generic [ref=e112]:
+                - generic [ref=e113]: 월세
+                - generic [ref=e114]: 150만
+              - generic [ref=e115]:
+                - button "−" [ref=e116] [cursor=pointer]
+                - slider [ref=e117] [cursor=pointer]: "1500000"
+                - button "+" [ref=e118] [cursor=pointer]
+              - generic [ref=e119]:
+                - generic [ref=e120]: 0원
+                - generic [ref=e121]: 300만
+              - generic [ref=e122]:
+                - button "50만" [ref=e123] [cursor=pointer]
+                - button "100만" [ref=e124] [cursor=pointer]
+                - button "150만" [ref=e125] [cursor=pointer]
+                - button "200만" [ref=e126] [cursor=pointer]
+            - paragraph [ref=e127]: 월세 시나리오
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - heading "거주 예정 기간" [level=2] [ref=e130]
+            - generic [ref=e131]: 5년
+          - slider [ref=e132] [cursor=pointer]: "5"
+          - generic [ref=e133]:
+            - generic [ref=e134]: 1년
+            - generic [ref=e135]: 20년
+          - generic [ref=e136]:
+            - button "2년" [ref=e137] [cursor=pointer]
+            - button "4년" [ref=e138] [cursor=pointer]
+            - button "6년" [ref=e139] [cursor=pointer]
+            - button "10년" [ref=e140] [cursor=pointer]
+            - button "20년" [ref=e141] [cursor=pointer]
+      - button "⚙️ 계산 중..." [disabled] [ref=e170]:
+        - generic [ref=e144]: ⚙️
+        - generic [ref=e145]: 계산 중...
+      - generic [ref=e148]:
+        - generic [ref=e149]: 🏡
+        - generic [ref=e150]:
+          - paragraph [ref=e151]: 조건을 입력하고 계산해보세요
+          - paragraph [ref=e152]: 취득세·대출이자·기회비용까지 반영한 실질 비교
+        - generic [ref=e153]:
+          - generic [ref=e154]:
+            - generic [ref=e155]: 🏠
+            - generic [ref=e156]: 매수가 유리한 조건은?
+          - generic [ref=e157]:
+            - generic [ref=e158]: 🔑
+            - generic [ref=e159]: 전세 vs 월세 기회비용 비교
+          - generic [ref=e160]:
+            - generic [ref=e161]: 📊
+            - generic [ref=e162]: 몇 년 살아야 매수가 이득?
+          - generic [ref=e163]:
+            - generic [ref=e164]: 💰
+            - generic [ref=e165]: 집값 상승 없어도 매수가 나을까?
+        - generic [ref=e166]:
+          - generic [ref=e167]: 위 조건을 설정한 뒤 계산하기를 눌러보세요
+          - generic [ref=e168]: ↑
+  - alert [ref=e169]

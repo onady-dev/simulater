@@ -37,6 +37,22 @@ function CustomTooltip({ active, payload, label }: TooltipProps) {
   );
 }
 
+function getScenarioConstraintReasons(
+  affordability: ReturnType<typeof checkAffordability>,
+) {
+  const reasons: string[] = [];
+
+  if (!affordability.hasEnoughMonthlyCash) {
+    reasons.push('월 지출이 월 추가 저축 가능액을 초과');
+  }
+
+  if (!affordability.hasEnoughUpfrontCash) {
+    reasons.push('초기 필요 자금이 현재 보유 자산을 초과');
+  }
+
+  return reasons.join(', ');
+}
+
 export function AssetProjectionChart() {
   const results = useCalculatorStore((s) => s.results);
   const yearsToHold = useCalculatorStore((s) => s.buyInputs.yearsToHold);
@@ -68,8 +84,8 @@ export function AssetProjectionChart() {
         투자수익률 {(investmentRate * 100).toFixed(0)}% 가정 · 보유 자산 기준
       </p>
 
-      <div className="mt-4 h-56">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="mt-4 min-w-0" style={{ height: 224 }}>
+        <ResponsiveContainer width="100%" height={224} minWidth={0}>
           <LineChart data={data} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
             <XAxis
@@ -122,11 +138,11 @@ export function AssetProjectionChart() {
 
       {(!buyAffordability.isAffordable || !jeonseAffordability.isAffordable || !rentAffordability.isAffordable) && (
         <div className="mt-3 bg-red-50 border border-red-200 rounded-xl p-3">
-          <p className="text-xs text-red-700 font-medium mb-1">⚠️ 월 지출 초과 시나리오</p>
+          <p className="text-xs text-red-700 font-medium mb-1">조건을 충족하지 못하는 시나리오</p>
           <ul className="text-xs text-red-600 space-y-0.5">
-            {!buyAffordability.isAffordable && <li>• 매수: 점선으로 표시 (월 지출이 저축액 초과)</li>}
-            {!jeonseAffordability.isAffordable && <li>• 전세: 점선으로 표시 (월 지출이 저축액 초과)</li>}
-            {!rentAffordability.isAffordable && <li>• 월세: 점선으로 표시 (월 지출이 저축액 초과)</li>}
+            {!buyAffordability.isAffordable && <li>• 매수: 점선으로 표시 ({getScenarioConstraintReasons(buyAffordability)})</li>}
+            {!jeonseAffordability.isAffordable && <li>• 전세: 점선으로 표시 ({getScenarioConstraintReasons(jeonseAffordability)})</li>}
+            {!rentAffordability.isAffordable && <li>• 월세: 점선으로 표시 ({getScenarioConstraintReasons(rentAffordability)})</li>}
           </ul>
         </div>
       )}
