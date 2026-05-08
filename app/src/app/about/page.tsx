@@ -1,10 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ContentLayout } from '@/components/layout/ContentLayout';
+import { siteUrl } from '@/lib/site/content';
 
 export const metadata: Metadata = {
-  title: '서비스 소개 | 집 살까? 전세 살까?',
-  description: '집 살까? 전세 살까?는 매수·전세·월세의 실질 주거비를 정확하게 비교하는 무료 계산기입니다.',
+  title: '서비스 소개',
+  description: 'KLEVX는 매수·전세·월세의 실질 주거비를 초기자금, 월 지출, 순자산 관점에서 비교하는 무료 계산기입니다.',
+  alternates: {
+    canonical: `${siteUrl}/about/`,
+  },
 };
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
@@ -25,7 +29,7 @@ export default function AboutPage() {
       {/* 헤드라인 */}
       <div className="bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl px-5 py-6 mb-6 text-white text-center">
         <p className="text-2xl mb-2">🏠</p>
-        <h2 className="text-lg font-bold mb-1">집 살까? 전세 살까?</h2>
+        <h2 className="text-lg font-bold mb-1">KLEVX</h2>
         <p className="text-sm opacity-90">
           매수·전세·월세의 실질 주거비를 정확하게 비교하는 무료 계산기
         </p>
@@ -47,8 +51,8 @@ export default function AboutPage() {
         <ul className="space-y-2 list-none">
           {[
             ['🏠 매수', '취득세, 중개수수료, 법무사비용, 재산세, 종부세, 대출이자, 자기자본 기회비용, 양도소득세, 시세 상승 이익'],
-            ['🔑 전세', '중개수수료, 전세보증보험료, 전세대출 이자, 보증금 기회비용, 세액공제 혜택'],
-            ['📋 월세', '월 임차료 누적, 보증금 기회비용, 월세 세액공제 혜택'],
+            ['🔑 전세', '중개수수료, 전세보증보험료, 전세대출 이자, 보증금 기회비용'],
+            ['📋 월세', '월 임차료 누적, 보증금 기회비용'],
           ].map(([label, desc]) => (
             <li key={label} className="flex gap-2">
               <span className="font-semibold whitespace-nowrap">{label}</span>
@@ -60,12 +64,12 @@ export default function AboutPage() {
 
       <Card title="계산 방식의 신뢰성">
         <p>
-          이 계산기는 국토교통부 고시 세율, 금융감독원 기준 대출 상환 공식,
-          임대차보호법 전월세 전환율 규정을 기반으로 작동합니다.
+          이 계산기는 공개된 세금 기준, 대출 상환 공식, 임대차 관련 기준을 바탕으로
+          매수·전세·월세의 비용 구조를 비교합니다.
         </p>
         <p>
-          세율은 2025년 최신 기준을 반영하며, 취득세 중과·종합부동산세·양도소득세
-          비과세 요건 등 주요 세법 조항을 포함합니다.
+          세율과 제도는 변경될 수 있으므로 계산 기준일과 데이터 출처를 함께 확인해야 합니다.
+          실제 거래 전에는 세무, 금융, 법률 전문가에게 본인의 조건을 확인하는 것이 좋습니다.
         </p>
         <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
           ※ 공시가격은 시세의 70% 근사치를 적용합니다. 실제 공시가격과 다를 수 있으며,
@@ -95,9 +99,24 @@ export default function AboutPage() {
         <ul className="space-y-1.5">
           <li>• 완전 무료로 제공되며 회원가입이 필요 없습니다.</li>
           <li>• 입력한 숫자는 기기에만 저장되며 서버로 전송되지 않습니다.</li>
-          <li>• 광고 수익으로 운영되며, 표시되는 광고는 Google AdSense를 통해 제공됩니다.</li>
+          <li>• 서비스 운영을 위해 향후 Google AdSense 등 제3자 광고가 표시될 수 있습니다.</li>
           <li>• 오류나 개선 의견은 언제든 환영합니다.</li>
         </ul>
+      </Card>
+
+      <Card title="신뢰와 고지">
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            ['/methodology', '계산 방식'],
+            ['/data-sources', '데이터 출처'],
+            ['/editorial-policy', '편집 정책'],
+            ['/disclaimer', '면책 고지'],
+          ].map(([href, label]) => (
+            <Link key={href} href={href} className="rounded-xl bg-gray-50 px-3 py-2 text-center text-xs font-bold text-gray-700">
+              {label}
+            </Link>
+          ))}
+        </div>
       </Card>
 
       <div className="mt-6 grid grid-cols-2 gap-3">

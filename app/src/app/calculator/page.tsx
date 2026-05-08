@@ -8,6 +8,7 @@ import { PeriodStepCard } from '@/components/inputs/PeriodStepCard';
 import { AutoRecommendation } from '@/components/results/AutoRecommendation';
 import { AssetProjectionChart } from '@/components/charts/AssetProjectionChart';
 import { MonthlyCostSummary } from '@/components/results/MonthlyCostSummary';
+import { CalculationDisclosure } from '@/components/results/CalculationDisclosure';
 import { CalculationLoadingScreen } from '@/components/loading/CalculationLoadingScreen';
 import { IdleStateGuide } from '@/components/results/IdleStateGuide';
 
@@ -90,6 +91,7 @@ export default function CalculatorPage() {
                 <AssetProjectionChart />
               </div>
               <MonthlyCostSummary />
+              <CalculationDisclosure />
               <p className="text-xs text-gray-400 text-center px-6 mt-4">
                 ※ 공시가격은 시세의 70% 근사치 적용. 본 계산기는 참고용이며 법적 효력이 없습니다.
               </p>

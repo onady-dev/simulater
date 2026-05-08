@@ -176,15 +176,15 @@ export function ScenarioSwipeCards() {
                       ) : (
                         <>
                           <div className="invisible flex justify-between text-xs">
-                            <span>placeholder</span>
+                            <span>&nbsp;</span>
                             <span>-</span>
                           </div>
                           <div className="invisible flex justify-between text-xs">
-                            <span>placeholder</span>
+                            <span>&nbsp;</span>
                             <span>-</span>
                           </div>
                           <div className="invisible flex justify-between text-xs">
-                            <span>placeholder</span>
+                            <span>&nbsp;</span>
                             <span>-</span>
                           </div>
                         </>

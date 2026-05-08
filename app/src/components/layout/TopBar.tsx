@@ -5,6 +5,8 @@ import { useCalculatorStore } from '@/lib/store/calculatorStore';
 
 const navLinks = [
   { href: '/guide', label: '가이드' },
+  { href: '/case-studies', label: '사례' },
+  { href: '/methodology', label: '계산방식' },
   { href: '/faq', label: 'FAQ' },
   { href: '/terms', label: '용어집' },
   { href: '/about', label: '소개' },
@@ -17,7 +19,7 @@ export function TopBar() {
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-gray-100">
       <div className="flex items-center justify-between px-4 h-14">
         <Link href="/" className="text-base font-bold text-gray-900 hover:text-blue-600 transition-colors">
-          집 살까? 전세 살까?
+          KLEVX
         </Link>
         <div className="flex items-center gap-3">
           <nav className="hidden sm:flex items-center gap-3">

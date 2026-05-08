@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
 import { ContentLayout } from '@/components/layout/ContentLayout';
+import { siteUrl } from '@/lib/site/content';
 
 export const metadata: Metadata = {
-  title: '부동산 용어 해설 | 집 살까? 전세 살까?',
+  title: '부동산 용어 해설',
   description: '취득세, LTV, DSR, 기회비용, 전세가율 등 부동산 계산에 필요한 핵심 용어를 쉽게 설명합니다.',
+  alternates: {
+    canonical: `${siteUrl}/terms/`,
+  },
 };
 
 interface Term {

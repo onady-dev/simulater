@@ -29,7 +29,7 @@ export function MonthlyCostSummary() {
   const rentMonthly = monthlyRent;
 
   const items = [
-    { key: 'buy' as const, value: buyMonthly, sub: '대출+세금+관리비', affordable: buyAffordability.isAffordable },
+    { key: 'buy' as const, value: buyMonthly, sub: '대출+보유세', affordable: buyAffordability.isAffordable },
     { key: 'jeonse' as const, value: jeonseMonthly, sub: '대출이자', affordable: jeonseAffordability.isAffordable },
     { key: 'monthlyRent' as const, value: rentMonthly, sub: '월 임차료', affordable: rentAffordability.isAffordable },
   ];
